@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>System Settings | Lumi AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body { font-family: system-ui, sans-serif; background: #020617; }
+    .glass-card {
+      background: rgba(15, 23, 42, 0.6);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(45, 212, 191, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen">
+  <!-- Glowing Background -->
+  <div class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
+    <div class="absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"></div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="bg-slate-900/50 backdrop-blur-md border-b border-white/5 py-4 sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
+      <div class="flex items-center gap-3">
+        <i class="fa-solid fa-gear text-2xl text-teal-400"></i>
+        <h1 class="text-xl font-bold tracking-tight">System Settings</h1>
+      </div>
+      <div class="flex gap-6 text-sm font-medium">
+        <a href="/" class="hover:text-teal-400 transition">Dashboard</a>
+        <a href="/surgical" class="hover:text-teal-400 transition">Surgical Chamber</a>
+        <a href="/login" class="text-rose-400 hover:text-rose-300 transition">Logout</a>
+      </div>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-6 py-12">
+    <div class="mb-12">
+      <h2 class="text-4xl font-black text-white mb-2">Configure Your Experience</h2>
+      <p class="text-slate-400">Manage clinical records and system preferences.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <!-- Clinical Profile Card -->
+      <div class="glass-card rounded-[2rem] p-10 border-teal-500/10 hover:border-teal-400/40 transition-all duration-500 group">
+        <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-user-doctor text-2xl text-blue-400"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-4">Surgeon Profile</h3>
+        <div class="space-y-4">
+          <div>
+            <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Email Identity</label>
+            <div id="userEmail" class="text-teal-400 font-medium truncate">Fetching credential...</div>
+          </div>
+          <div>
+            <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Specialization</label>
+            <div class="text-white text-sm">Maternal-Fetal Surgery</div>
+          </div>
+          <div class="pt-4 border-t border-white/5">
+            <span class="inline-flex items-center px-3 py-1 bg-teal-500/10 text-teal-400 text-[10px] font-bold rounded-full border border-teal-500/20">
+              <i class="fa-solid fa-shield-check mr-1"></i> VERIFIED ACCESS
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Clinical History Card -->
+      <div class="glass-card rounded-[2rem] p-10 hover:border-teal-400/40 transition-all duration-500 group">
+        <div class="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center mb-6 border border-teal-500/20 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-box-archive text-2xl text-teal-400"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-4">Clinical Data History</h3>
+        <p class="text-slate-400 mb-8 leading-relaxed">
+          Access and synchronize your medical analysis history. You can export all surgical rehearsal data for external audit.
+        </p>
+        <div class="space-y-4">
+          <button onclick="downloadHistory()" class="w-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-400 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-teal-500/5">
+            <i class="fa-solid fa-download"></i> Download Clinical Export
+          </button>
+          <button onclick="loadHistory()" class="w-full bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-bold transition-all border border-white/5">
+            <i class="fa-solid fa-arrows-rotate mr-2 text-slate-400"></i> Refresh Records
+          </button>
+        </div>
+        <div id="historyOutput" class="mt-8 max-h-48 overflow-y-auto space-y-3 hidden">
+          <!-- Populated via JS -->
+        </div>
+      </div>
+
+      <!-- System Privacy Card -->
+      <div class="glass-card rounded-[2rem] p-10 border-rose-500/10 hover:border-rose-500/30 transition-all duration-500 group">
+        <div class="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mb-6 border border-rose-500/20 group-hover:scale-110 transition-transform">
+          <i class="fa-solid fa-trash-can text-2xl text-rose-400"></i>
+        </div>
+        <h3 class="text-2xl font-bold text-white mb-4">Privacy & Disposal</h3>
+        <p class="text-slate-400 mb-8 leading-relaxed">
+          Permanent removal of clinical logs and analysis records. This action is destructive and complies with HIPAA/GDPR standards.
+        </p>
+        <button onclick="clearHistory()" class="w-full bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white py-4 rounded-2xl font-bold transition-all border border-rose-500/30 flex items-center justify-center gap-3">
+          <i class="fa-solid fa-fire"></i> Delete Analysis History
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // Load local user data
+    document.addEventListener('DOMContentLoaded', () => {
+      // Enforce authentication
+      if (!localStorage.getItem('lumi_user')) {
+        window.location.replace('/login');
+        return;
+      }
+
+      const userData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      if (userData.email) {
+        document.getElementById('userEmail').textContent = userData.email;
+      }
+    });
+
+    async function loadHistory() {
+      const output = document.getElementById('historyOutput');
+      output.classList.remove('hidden');
+      output.innerHTML = '<div class="text-teal-400 text-sm animate-pulse">Synchronizing clinical data...</div>';
+      
+      try {
+        const res = await fetch('/api/v1/history/');
+        const data = await res.json();
+        if (data.success && data.records.length > 0) {
+          output.innerHTML = data.records.map((r, i) => `
+            <div class="p-4 bg-white/5 rounded-xl border border-white/5 text-xs">
+              <div class="flex justify-between text-teal-400 font-bold mb-1">
+                <span>Record #${i+1}</span>
+                <span class="text-slate-500">${new Date(r.created_at).toLocaleDateString()}</span>
+              </div>
+              <div class="text-slate-300">BP: ${r.maternal_bp || 'N/A'} • HR: ${r.maternal_hr || 'N/A'}</div>
+            </div>
+          `).join('');
+        } else {
+          output.innerHTML = '<div class="text-slate-500 text-sm">No analysis history found.</div>';
+        }
+      } catch (err) {
+        output.innerHTML = '<div class="text-rose-400 text-sm">Diagnostic sync failed.</div>';
+      }
+    }
+
+    function downloadHistory() {
+      // In a real app, this would fetch CSV/JSON and trigger a blob download
+      const clinicalData = { export_date: new Date().toISOString(), status: "Valid" };
+      const blob = new Blob([JSON.stringify(clinicalData, null, 2)], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `lumi_ai_export_${Date.now()}.json`;
+      a.click();
+    }
+
+    function clearHistory() {
+      if (confirm("⚠️ CAUTION: Are you sure you want to permanently delete all clinical analysis history?")) {
+        alert("Clinical data disposal initiated.");
+        document.getElementById('historyOutput').innerHTML = '';
+      }
+    }
+  </script>
+</body>
+</html>

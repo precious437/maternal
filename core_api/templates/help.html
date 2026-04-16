@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Help & Guides • Maternal-Fetal AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    body {
+      font-family: 'Inter', system_ui, sans-serif;
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-50">
+
+  <!-- Navigation -->
+  <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div class="flex items-center gap-x-3">
+        <i class="fa-solid fa-heart-pulse text-3xl text-[#00bfa5]"></i>
+        <div>
+          <h1 class="text-2xl font-semibold text-[#0a3d62]">Maternal-Fetal AI</h1>
+          <p class="text-xs text-slate-500 -mt-1">Surgical Prediction System</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-x-8 text-sm font-medium">
+        <a href="/" class="hover:text-[#00bfa5]">Home</a>
+        <a href="/surgical" class="auth-protected-link hidden hover:text-[#00bfa5]">Surgical AI</a>
+        <a href="/settings" class="auth-protected-link hidden hover:text-[#00bfa5]">Settings</a>
+        <a href="/help" class="text-[#00bfa5]">Help</a>
+      </div>
+      <div class="flex items-center gap-x-4">
+        <!-- User area -->
+        <div id="user-area" class="flex items-center gap-x-2 bg-slate-100 px-4 py-1 rounded-2xl hidden">
+          <div id="user-icon"
+            class="w-8 h-8 bg-[#0a3d62] text-white rounded-xl flex items-center justify-center text-xs font-bold uppercase">
+            U</div>
+          <span id="user-name" class="text-sm font-medium text-slate-800 truncate max-w-[120px]">User</span>
+        </div>
+
+        <a href="/login" id="auth-button"
+          class="bg-[#0a3d62] hover:bg-[#00bfa5] text-white px-6 py-2 rounded-3xl text-sm font-medium transition flex items-center gap-x-2">
+          <i class="fa-solid fa-right-to-bracket" id="auth-icon"></i> <span id="auth-text">Login</span>
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-5xl mx-auto px-6 py-12">
+    <div class="text-center mb-12">
+      <h1 class="text-4xl font-semibold text-[#0a3d62]">Help & User Guides</h1>
+      <p class="text-slate-600 mt-4 text-lg">Step-by-step guides to help you use the Maternal-Fetal AI Surgical
+        Prediction System effectively</p>
+    </div>
+
+    <!-- Improved Guides Section -->
+    <div class="space-y-6">
+
+      <!-- Guide 1 -->
+      <div class="bg-white rounded-3xl p-8 shadow-sm">
+        <div class="flex items-center gap-x-5">
+          <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center text-3xl">🚀</div>
+          <div class="flex-1">
+            <h3 class="text-2xl font-semibold text-[#0a3d62]">Getting Started</h3>
+            <p class="text-slate-500 mt-1">First time setup and basic navigation</p>
+          </div>
+        </div>
+
+        <button onclick="toggleGuide(this)"
+          class="mt-8 w-full flex justify-between items-center py-4 border-t text-[#0a3d62] font-medium hover:text-teal-600 transition">
+          <span>View Full Guide</span>
+          <i class="fa-solid fa-chevron-down transition-transform"></i>
+        </button>
+
+        <div class="accordion-content text-slate-600 text-[15px] leading-relaxed pt-5">
+          <p class="mb-4">1. Log in using your credentials.</p>
+          <p class="mb-4">2. Complete your surgeon profile in Settings.</p>
+          <p class="mb-4">3. Go to Surgical AI page to start a new case.</p>
+          <p>4. Begin by entering vital signs, then upload images for YOLO analysis.</p>
+        </div>
+      </div>
+
+      <!-- Guide 2 -->
+      <div class="bg-white rounded-3xl p-8 shadow-sm">
+        <div class="flex items-center gap-x-5">
+          <div class="w-14 h-14 bg-teal-100 rounded-2xl flex items-center justify-center text-3xl">🧠</div>
+          <div class="flex-1">
+            <h3 class="text-2xl font-semibold text-[#0a3d62]">Using Surgical AI Features</h3>
+            <p class="text-slate-500 mt-1">Vital signs, YOLO detection, and predictions</p>
+          </div>
+        </div>
+
+        <button onclick="toggleGuide(this)"
+          class="mt-8 w-full flex justify-between items-center py-4 border-t text-[#0a3d62] font-medium hover:text-teal-600 transition">
+          <span>View Full Guide</span>
+          <i class="fa-solid fa-chevron-down transition-transform"></i>
+        </button>
+
+        <div class="accordion-content text-slate-600 text-[15px] leading-relaxed pt-5">
+          <p class="mb-4"><strong>Vital Signs:</strong> Use only numeric values. All fields are required before running
+            prediction.</p>
+          <p class="mb-4"><strong>YOLO Detection:</strong> Upload ultrasound or MRI image. The system will automatically
+            detect fetal head, placenta, and possible anomalies.</p>
+          <p class="mb-4"><strong>AI Prediction:</strong> Click "Run Full AI Prediction" after entering vitals and
+            uploading image. Results include risk score and clinical recommendation.</p>
+          <p><strong>Live Vision:</strong> Use your camera for real-time detection during scanning.</p>
+        </div>
+      </div>
+
+      <!-- Guide 3 -->
+      <div class="bg-white rounded-3xl p-8 shadow-sm">
+        <div class="flex items-center gap-x-5">
+          <div class="w-14 h-14 bg-amber-100 rounded-2xl flex items-center justify-center text-3xl">🕹️</div>
+          <div class="flex-1">
+            <h3 class="text-2xl font-semibold text-[#0a3d62]">Live Vision & 3D Rehearsal</h3>
+            <p class="text-slate-500 mt-1">Real-time assistance and surgical practice</p>
+          </div>
+        </div>
+
+        <button onclick="toggleGuide(this)"
+          class="mt-8 w-full flex justify-between items-center py-4 border-t text-[#0a3d62] font-medium hover:text-teal-600 transition">
+          <span>View Full Guide</span>
+          <i class="fa-solid fa-chevron-down transition-transform"></i>
+        </button>
+
+        <div class="accordion-content text-slate-600 text-[15px] leading-relaxed pt-5">
+          <p class="mb-4"><strong>Live Vision Mode:</strong> Click "Start Live Camera" and point your device at the
+            ultrasound screen or patient area. YOLO will detect structures in real time.</p>
+          <p class="mb-4"><strong>3D Rehearsal Mode:</strong> Switch to this mode to practice surgical procedures.
+            Connect your PS joystick for realistic tool control.</p>
+          <p class="font-medium">Use Live Vision during actual scanning and 3D Rehearsal before high-risk deliveries.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const userStr = localStorage.getItem('lumi_user');
+      const authIcon = document.getElementById('auth-icon');
+      const authText = document.getElementById('auth-text');
+      const userArea = document.getElementById('user-area');
+      const userName = document.getElementById('user-name');
+      const userIcon = document.getElementById('user-icon');
+      const protectedLinks = document.querySelectorAll('.auth-protected-link');
+
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const email = user.email || 'Surgeon';
+          userName.textContent = email;
+          userIcon.textContent = email.charAt(0);
+          userArea.classList.remove('hidden');
+
+          authIcon.className = "fa-solid fa-right-from-bracket";
+          authText.textContent = "Logout";
+
+          protectedLinks.forEach(link => {
+            link.classList.remove('hidden');
+          });
+        } catch (e) { }
+      } else {
+        userArea.classList.add('hidden');
+        authIcon.className = "fa-solid fa-right-to-bracket";
+        authText.textContent = "Login";
+
+        protectedLinks.forEach(link => {
+          link.classList.add('hidden');
+        });
+      }
+    });
+
+    function toggleGuide(btn) {
+      const content = btn.parentElement.querySelector('.accordion-content');
+      const icon = btn.querySelector('i');
+
+      if (content.style.maxHeight && content.style.maxHeight !== "0px") {
+        content.style.maxHeight = "0px";
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+      } else {
+        content.style.maxHeight = content.scrollHeight + "px";
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+      }
+    }
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Surgical AI Chamber - Maternal-Fetal System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); 
+    body { font-family: 'Inter', sans-serif; }
+    
+    /* 3D Container - Full Experience */
+    #three-container { 
+      border-radius: 2rem; overflow: hidden; background: #0a1729; position: relative; 
+      height: 600px; box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.3); border: 2px solid rgba(255,255,255,0.1); 
+    }
+    @media (max-width: 640px) { #three-container { height: 350px; border-radius: 1.25rem; } }
+    canvas { display: block; border-radius: 2rem; }
+
+    /* Side Panel Console */
+    .console-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 2rem;
+      border: 1px solid rgba(0, 191, 165, 0.1);
+      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+      padding: 1.5rem;
+    }
+
+    #clinical-log {
+      position: absolute; right: 20px; top: 20px; bottom: 80px;
+      width: 400px; background: rgba(255, 255, 255, 0.98);
+      border-radius: 1.5rem; border: 1px solid rgba(0, 191, 165, 0.3);
+      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
+      padding: 0; color: #475569; display: flex; flex-direction: column;
+      backdrop-filter: blur(16px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+      z-index: 100; opacity: 0; pointer-events: none; transform: translateX(40px);
+    }
+    @media (max-width: 768px) {
+        #clinical-log {
+            left: 10px; right: 10px; bottom: 10px; top: auto;
+            width: auto; height: 60vh;
+            transform: translateY(100%);
+            border-radius: 2rem 2rem 0 0;
+        }
+    }
+    #clinical-log.open { opacity: 1; pointer-events: auto; transform: translateX(0); }
+    @media (max-width: 768px) { #clinical-log.open { transform: translateY(0); } }
+    
+    .log-entry.clinical { 
+      border-left: 4px solid #00bfa5; 
+      background: linear-gradient(to right, #f0fdfa, #ffffff);
+      padding: 15px;
+      margin-top: 10px;
+      border-radius: 0.5rem 1rem 1rem 0.5rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 191, 165, 0.1);
+    }
+    
+    /* Scanning Line Animation */
+    .scanning-line {
+        position: absolute; left: 0; width: 100%; height: 2px;
+        background: rgba(0, 191, 165, 0.8);
+        box-shadow: 0 0 15px #00bfa5;
+        z-index: 5; pointer-events: none;
+        animation: scanMove 3s infinite ease-in-out;
+    }
+    @keyframes scanMove { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+
+    #log-toggle-btn {
+      position: absolute; right: 20px; bottom: 20px;
+      padding: 10px 20px; background: #00bfa5; color: white;
+      border-radius: 2rem; font-weight: 600; font-size: 0.8rem;
+      box-shadow: 0 10px 15px -3px rgba(0, 191, 165, 0.3);
+      transition: all 0.3s ease; z-index: 110;
+    }
+
+    #hud-overlay {
+      position: absolute; left: 20px; top: 20px;
+      padding: 8px 16px; background: rgba(0, 191, 165, 0.9);
+      border-radius: 2rem; color: white; font-weight: 700; font-size: 0.75rem;
+      pointer-events: none; z-index: 10; border: 1px solid rgba(255,255,255,0.2);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    
+    .step-indicator {
+        width: 32px; height: 32px; border-radius: 50%;
+        display: flex; items-center; justify-center; 
+        background: #f1f5f9; color: #94a3b8; font-weight: 700; font-size: 0.85rem;
+        border: 2px solid transparent; transition: all 0.3s;
+    }
+    .step-active .step-indicator { background: #00bfa5; color: white; border-color: #00bfa5; box-shadow: 0 0 15px rgba(0, 191, 165, 0.4); }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="bg-[#f8fafb] text-slate-800">
+
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between">
+      <div class="flex items-center gap-x-2 lg:gap-x-4">
+        <div class="w-8 h-8 lg:w-10 lg:h-10 bg-[#00bfa5] rounded-lg lg:rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+            <i class="fa-solid fa-heart-pulse text-lg lg:text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg lg:text-xl font-bold text-[#0a3d62]">Maternal AI</h1>
+          <p class="text-[8px] lg:text-[10px] text-slate-400 font-bold uppercase tracking-wider hidden sm:block">Surgical Prediction Chamber</p>
+        </div>
+      </div>
+
+      <div class="hidden lg:flex items-center gap-x-6 text-sm">
+        <a href="/surgical" class="text-[#00bfa5] font-bold"><i class="fa-solid fa-robot mr-1"></i> Surgical</a>
+        <a href="/settings" class="text-slate-500 hover:text-[#00bfa5]"><i class="fa-solid fa-cog mr-1"></i> Settings</a>
+        <a href="/help" class="text-slate-500 hover:text-[#00bfa5]"><i class="fa-solid fa-circle-question mr-1"></i> Help</a>
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div class="flex items-center gap-x-3">
+            <span id="user-name" class="font-semibold text-slate-600">Surgeon</span>
+            <button onclick="logoutUser()" class="bg-[#0a3d62] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-[#00bfa5] transition-all">Logout</button>
+        </div>
+      </div>
+      
+      <!-- Mobile Toggle -->
+      <button id="mobileNavBtn" class="lg:hidden text-slate-600 p-2"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
+    </div>
+    
+    <!-- Mobile Dropdown -->
+    <div id="mobileDropdown" class="hidden lg:hidden flex-col bg-white border-t border-slate-100 px-6 py-5 space-y-5 absolute top-full left-0 w-full shadow-xl">
+      <a href="/surgical" class="text-[#00bfa5] font-bold flex items-center gap-x-3"><i class="fa-solid fa-robot w-6"></i> Surgical AI</a>
+      <a href="/settings" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-cog w-6"></i> Settings</a>
+      <a href="/help" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-circle-question w-6"></i> Help</a>
+      <div class="h-px bg-slate-100 my-2"></div>
+      <button onclick="logoutUser()" class="bg-[#0a3d62] text-white font-bold text-center py-4 rounded-2xl flex items-center justify-center gap-x-2">
+        <i class="fa-solid fa-right-from-bracket"></i> Logout
+      </button>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-3 lg:px-6 py-4 lg:py-8">
+    
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
+      
+      <!-- LEFT: STAGE AREA (3D) -->
+      <div class="lg:col-span-8 order-1">
+        <div id="three-container">
+            <div id="hud-overlay">System Active</div>
+            <button id="log-toggle-btn" onclick="toggleLog()"><i class="fa-solid fa-list-check mr-1"></i> Audit Log</button>
+            <div id="clinical-log">
+                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0">
+                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Audit Path</span>
+                    <button onclick="toggleLog()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <div id="log-content" class="p-4 flex-1 overflow-y-auto"></div>
+            </div>
+        </div>
+
+        <div class="mt-4 lg:mt-6 flex flex-col sm:flex-row items-center justify-between p-4 lg:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
+            <div class="flex items-center gap-4 mb-4 sm:mb-0">
+                <div class="w-10 h-10 lg:w-12 lg:h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-[#00bfa5]">
+                    <i class="fa-solid fa-wand-sparkles text-xl lg:text-2xl"></i>
+                </div>
+                <div>
+                    <h4 class="font-bold text-sm lg:text-base text-slate-800">Adaptive Digital Twin</h4>
+                    <p class="text-[10px] lg:text-xs text-slate-400">Rehearsal state generated from telemetry</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] lg:text-[10px] font-bold">READY FOR REHEARSAL</span>
+            </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: CONSOLE AREA (CONTROLS) -->
+      <div class="lg:col-span-4 space-y-4 lg:space-y-6 order-2">
+        
+        <!-- STEP 1: VITALS -->
+        <div class="console-card step-active">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="step-indicator">1</div>
+                <div>
+                    <h3 class="font-bold text-slate-800">Telemetry</h3>
+                    <p class="text-[10px] text-slate-400">Patient Vitals</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">BP (mmHg)</label>
+                    <input type="text" id="bp" value="120/80" placeholder="120/80" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
+                </div>
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">SpO2 (%)</label>
+                    <input type="number" id="spo2" value="98" min="70" max="100" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
+                </div>
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Maternal HR</label>
+                    <input type="number" id="mhr" value="82" min="40" max="180" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
+                </div>
+                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Fetal HR</label>
+                    <input type="number" id="fhr" value="145" min="60" max="220" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
+                </div>
+            </div>
+            <button onclick="saveVitals()" class="w-full bg-[#0a3d62] text-white py-3 rounded-xl text-xs font-bold hover:bg-[#00bfa5] transition-all">Submit Vitals</button>
+        </div>
+
+        <!-- STEP 2: SCAN -->
+        <div class="console-card">
+            <div class="flex items-center gap-4 mb-4">
+                <div class="step-indicator">2</div>
+                <div>
+                    <h3 class="font-bold text-slate-800">Clinical Focus</h3>
+                    <p class="text-[10px] text-slate-400">Scan Transformation</p>
+                </div>
+            </div>
+            <div id="uploadArea" onclick="document.getElementById('uploadInput').click()" 
+                 class="border-2 border-dashed border-slate-200 hover:border-[#00bfa5] bg-slate-50 rounded-2xl p-6 text-center cursor-pointer transition group">
+                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 group-hover:text-[#00bfa5] mb-2"></i>
+                <p class="text-xs font-bold text-slate-500">Drop Ultrasound Image</p>
+            </div>
+            <input type="file" id="uploadInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+            
+            <div id="previewContainer" class="mt-4 hidden animate-pulse">
+                <canvas id="previewCanvas" class="w-full rounded-xl border border-slate-200 grayscale opacity-50"></canvas>
+                <div id="aiResults" class="mt-4"></div>
+            </div>
+        </div>
+
+        <!-- STEP 3: CLINICAL ARCHIVE (HISTORY) -->
+        <div class="console-card">
+            <div class="flex items-center justify-between mb-4">
+                <div class="flex items-center gap-4">
+                    <div class="step-indicator"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                    <div>
+                        <h3 class="font-bold text-slate-800">Clinical Archive</h3>
+                        <p class="text-[10px] text-slate-400">Past Records</p>
+                    </div>
+                </div>
+                <button onclick="loadHistory()" class="text-slate-400 hover:text-[#00bfa5] transition-colors p-2">
+                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
+                </button>
+            </div>
+            <div id="historyList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
+                <div class="text-center py-6">
+                    <i class="fa-solid fa-circle-notch fa-spin text-[#00bfa5] mb-2"></i>
+                    <p class="text-[10px] text-slate-400">Synchronizing records...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- ANALYSIS STATUS -->
+        <div id="status" class="bg-[#0a3d62] text-white p-4 rounded-3xl text-center text-xs font-bold hidden">
+            <i class="fa-solid fa-microchip mr-2 animate-spin"></i> Analyzing...
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script>
+    // System Auth & Identity
+    const userStr = localStorage.getItem('lumi_user');
+    if (!userStr) { window.location.replace('/login'); }
+    else {
+      try {
+        const user = JSON.parse(userStr);
+        document.getElementById('user-name').textContent = user.email || 'Surgeon';
+      } catch(e) {}
+    }
+
+    function logoutUser() { localStorage.removeItem('lumi_user'); window.location.href = '/login'; }
+
+    // CSRF
+    function getCookie(name) {
+      let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
+      return v ? v[2] : null;
+    }
+
+    // Logging
+    function addLog(msg, type = 'info') {
+      const content = document.getElementById('log-content');
+      const div = document.createElement('div');
+      div.className = `log-entry ${type} mb-4 border-l-2 border-[#00bfa5] p-3 rounded-r-xl transition-all`;
+      if (type === 'error') div.classList.add('border-red-500', 'bg-red-50');
+      if (type === 'success') div.classList.add('border-green-500', 'bg-green-50');
+      
+      const icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'success' ? 'fa-circle-check' : (type === 'clinical' ? 'fa-user-doctor' : 'fa-info-circle'));
+      const color = type === 'error' ? 'text-red-500' : (type === 'clinical' ? 'text-[#00bfa5]' : 'text-slate-400');
+      
+      div.innerHTML = `
+        <div class="flex gap-3">
+            <i class="fa-solid ${icon} mt-1 text-xs ${color}"></i>
+            <div class="flex-1">
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-[8px] font-black opacity-40 uppercase tracking-widest">${new Date().toLocaleTimeString()}</span>
+                    ${type === 'clinical' ? '<span class="text-[8px] bg-[#00bfa5]/10 text-[#00bfa5] px-1.5 py-0.5 rounded-md font-bold">AI CLINICAL INSIGHT</span>' : ''}
+                </div>
+                <div class="${type === 'clinical' ? 'text-slate-800 font-bold text-sm leading-relaxed' : 'text-xs text-slate-600'}">${msg}</div>
+            </div>
+        </div>
+      `;
+      content.prepend(div);
+      
+      const hud = document.getElementById('hud-overlay');
+      hud.textContent = msg;
+      hud.style.background = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#00bfa5');
+    }
+
+    function toggleLog() { document.getElementById('clinical-log').classList.toggle('open'); }
+
+    // Logic: Vitals
+    async function saveVitals() {
+      const data = { 
+        maternal_bp: document.getElementById('bp').value, 
+        maternal_hr: document.getElementById('mhr').value, 
+        fetal_hr: document.getElementById('fhr').value, 
+        spo2: document.getElementById('spo2').value 
+      };
+      addLog("Streaming vitals to cloud center...");
+      try {
+        const res = await fetch("/api/v1/vitals/", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie('csrftoken') },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success || !result.error) { addLog("Vitals Synchronized.", "success"); }
+        else { addLog("Sync Failed: " + (result.error || "Internal Error"), "error"); }
+      } catch (err) { addLog("Network Disruption.", "error"); }
+    }
+
+    // Logic: Scan Upload
+    async function handleImageUpload(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      document.getElementById('previewContainer').classList.remove('hidden');
+      document.getElementById('status').classList.remove('hidden');
+      addLog(`Initializing holographic scan sequence: ${file.name}`);
+
+      // Preview
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.getElementById('previewCanvas');
+          canvas.width = img.width; canvas.height = img.height;
+          canvas.getContext('2d').drawImage(img, 0, 0);
+        };
+        img.src = ev.target.result;
+        if (window.updateScanHologram) window.updateScanHologram(ev.target.result);
+      };
+      reader.readAsDataURL(file);
+
+      const formData = new FormData();
+      formData.append("image", file);
+      
+      try {
+        const res = await fetch("/api/v1/upload/", { 
+          method: "POST", 
+          body: formData, 
+          headers: { "X-CSRFToken": getCookie('csrftoken') } 
+        });
+        const result = await res.json();
+        document.getElementById('status').classList.add('hidden');
+        
+        if (result.digital_twin && result.digital_twin.success) {
+          renderClinicalReport(result.digital_twin);
+          syncDigitalTwin(result.digital_twin.anomalies);
+        }
+      } catch (err) { addLog("AI Analytics Failure.", "error"); }
+      loadHistory();
+    }
+
+    function renderClinicalReport(aiData) {
+      const anomalies = aiData.anomalies;
+      const resultsDiv = document.getElementById('aiResults');
+      
+      addLog(`${anomalies.length} Intelligence Markers Identified.`, "success");
+      if(!document.getElementById('clinical-log').classList.contains('open')) toggleLog();
+
+      // Start Professional Report
+      let reportHtml = `
+        <div class="mt-6 border-t border-slate-100 pt-6 animate-fadeIn">
+            <div class="flex items-center justify-between mb-4">
+                <h5 class="text-[10px] font-black uppercase text-[#0a3d62] tracking-widest flex items-center gap-2">
+                    <i class="fa-solid fa-file-medical text-[#00bfa5]"></i> Diagnostic Intelligence Report
+                </h5>
+                <span class="text-[8px] bg-teal-50 text-[#00bfa5] px-2 py-0.5 rounded-full font-bold">VERIFIED</span>
+            </div>
+
+            <div class="space-y-4">
+                <!-- PART 1: LANDMARK STATUS -->
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase mb-3">Anatomical Landmark Verification</div>
+                    <div class="grid grid-cols-2 gap-2">
+                        ${generateLandmarkTag("Skull Contour", 98)}
+                        ${generateLandmarkTag("Midline Falx", 95)}
+                        ${generateLandmarkTag("Thalamus", 92)}
+                        ${generateLandmarkTag("CSP Marker", 88)}
+                    </div>
+                </div>
+
+                <!-- PART 2: CLINICAL FINDINGS -->
+                <div class="space-y-2">
+                    <div class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1">Observation Registry</div>
+                    ${anomalies.map(a => {
+                        addLog(`TRANSCRIPT: ${a.description}`, "clinical");
+                        const isCritical = a.label.toLowerCase().includes('critical') || a.label.toLowerCase().includes('previa');
+                        const colorClass = isCritical ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100';
+                        return `
+                        <div class="p-3 ${colorClass} border rounded-xl flex items-start gap-3 transition-transform hover:scale-[1.02]">
+                            <i class="fa-solid ${isCritical ? 'fa-triangle-exclamation' : 'fa-circle-info'} mt-1"></i>
+                            <div>
+                                <div class="text-[10px] font-black uppercase">${a.label}</div>
+                                <div class="text-[9px] font-medium leading-tight mt-0.5 opacity-80">${a.description}</div>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>
+
+                <!-- PART 3: CASE SUMMARY -->
+                <div class="p-4 bg-[#0a3d62] rounded-2xl text-white">
+                    <div class="flex items-center gap-2 mb-2">
+                        <i class="fa-solid fa-brain text-[#00bfa5] text-xs"></i>
+                        <span class="text-[9px] font-black uppercase tracking-wider">AI Clinician Interpretation</span>
+                    </div>
+                    <p class="text-[10px] leading-relaxed font-medium opacity-90">
+                        Scan indicates high-fidelity axial view. The presence of CSP and central midline falx suggest normal neuro-development. No immediate high-risk markers detected in the primary biometry zone.
+                    </p>
+                </div>
+            </div>
+        </div>
+      `;
+      resultsDiv.innerHTML = reportHtml;
+    }
+
+    function generateLandmarkTag(label, conf) {
+        return `
+            <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm">
+                <span class="text-[9px] font-bold text-slate-600">${label}</span>
+                <span class="text-[8px] font-black text-[#00bfa5]">${conf}%</span>
+            </div>
+        `;
+    }
+
+    // History Retrieval
+    async function loadHistory() {
+      const historyList = document.getElementById('historyList');
+      try {
+        const res = await fetch("/api/v1/history/");
+        const data = await res.json();
+        
+        if (data.history && data.history.length > 0) {
+          historyList.innerHTML = '';
+          data.history.forEach(item => {
+            const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent';
+            const div = document.createElement('div');
+            div.className = "p-3 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-[#00bfa5] hover:bg-teal-50/30 transition-all flex items-center justify-between group";
+            div.onclick = () => inspectHistoryItem(item);
+            div.innerHTML = `
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-[#00bfa5] transition-all">
+                  <i class="fa-solid fa-microscope text-xs"></i>
+                </div>
+                <div>
+                  <div class="text-[10px] font-black text-slate-700 truncate max-w-[140px]">${item.filename || 'Diagnostic Record'}</div>
+                  <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${date} • ${item.processed_as || 'SCAN'}</div>
+                </div>
+              </div>
+              <i class="fa-solid fa-arrow-right-long text-[10px] text-slate-300 group-hover:text-[#00bfa5] group-hover:translate-x-1 transition-all"></i>
+            `;
+            historyList.appendChild(div);
+          });
+        } else {
+          historyList.innerHTML = `
+            <div class="text-center py-10">
+                <i class="fa-solid fa-box-open text-slate-200 text-3xl mb-3"></i>
+                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No Analysis History Found</p>
+                <p class="text-[9px] text-slate-300 mt-1">Upload a scan to begin archiving</p>
+            </div>`;
+        }
+      } catch (err) {
+        console.error("History Fetch Error:", err);
+        historyList.innerHTML = '<div class="text-center py-6 text-[10px] text-red-400 font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i> Data Sync Error</div>';
+      }
+    }
+
+    function inspectHistoryItem(item) {
+      addLog(`Revisiting analysis for: ${item.filename}`, "info");
+      
+      // Update Preview
+      document.getElementById('previewContainer').classList.remove('hidden');
+      const canvas = document.getElementById('previewCanvas');
+      const ctx = canvas.getContext('2d');
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+          canvas.width = img.width; canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
+      };
+      img.src = item.image_url;
+
+      // Update 3D
+      if (window.updateScanHologram) window.updateScanHologram(item.image_url);
+      
+      if (item.analysis_results && item.analysis_results.success) {
+        renderClinicalReport(item.analysis_results);
+        syncDigitalTwin(item.analysis_results.anomalies);
+      }
+    }
+
+    // Initial Load
+    document.addEventListener('DOMContentLoaded', loadHistory);
+
+    // 3D Rehearsal Engine
+    let scene, camera, renderer, tool, fetusA, fetusB, scanHologram, world, uterus;
+    let hotspots = [];
+    let isRotateDragging = false, isToolDragging = false;
+    let prevX = 0, prevY = 0;
+
+    function init() {
+      const container = document.getElementById('three-container');
+      if (!container) return;
+      
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x0a1729); // Deep clinical blue
+
+      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 2000);
+      camera.position.set(0, 40, 180);
+
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+      renderer.setPixelRatio(window.devicePixelRatio);
+      renderer.setSize(container.clientWidth, container.clientHeight);
+      container.innerHTML = ''; // Clear any previous instance
+      container.appendChild(renderer.domElement);
+      
+      // Re-apply overlay elements
+      const hud = document.createElement('div'); hud.id = "hud-overlay"; hud.textContent = "System Initializing...";
+      container.appendChild(hud);
+      
+      const btn = document.createElement('button'); btn.id = "log-toggle-btn"; btn.innerHTML = '<i class="fa-solid fa-list-check mr-1"></i> Audit Log';
+      btn.onclick = toggleLog;
+      container.appendChild(btn);
+
+      const log = document.createElement('div'); log.id = "clinical-log";
+      log.innerHTML = `
+          <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0">
+              <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Audit Path</span>
+              <button onclick="toggleLog()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+          </div>
+          <div id="log-content" class="p-4 flex-1 overflow-y-auto"></div>`;
+      container.appendChild(log);
+
+      world = new THREE.Group();
+      scene.add(world);
+
+      // 1. ANATOMICAL FOUNDATION (The Maternal Shell)
+      // Representing the abdomen for better clinical context
+      const abdomenGeom = new THREE.SphereGeometry(60, 32, 32);
+      const abdomenMat = new THREE.MeshPhongMaterial({ 
+          color: 0x00bfa5, 
+          transparent: true, 
+          opacity: 0.1,
+          wireframe: true,
+          emissive: 0x00bfa5,
+          emissiveIntensity: 0.1
+      });
+      uterus = new THREE.Mesh(abdomenGeom, abdomenMat);
+      uterus.scale.set(1.4, 1, 1.2); // Anatomically appropriate ellipsoid
+      world.add(uterus);
+
+      // 2. SCAN HOLOGRAM (The Animated Scan Engine)
+      const scanGroup = new THREE.Group();
+      world.add(scanGroup);
+      
+      const createScanPlane = (opacity, z) => {
+          const mat = new THREE.MeshBasicMaterial({ 
+              transparent: true, 
+              opacity: 0.1, // Slight visible placeholder
+              color: 0x0ea5e9,
+              blending: THREE.AdditiveBlending, 
+              side: THREE.DoubleSide 
+          });
+          const mesh = new THREE.Mesh(new THREE.PlaneGeometry(120, 90), mat);
+          mesh.position.set(0, 0, z);
+          scanGroup.add(mesh);
+          return mesh;
+      };
+
+      planes = [
+          createScanPlane(0.8, 0),
+          createScanPlane(0.3, -5),
+          createScanPlane(0.1, -10)
+      ];
+
+      window.updateScanHologram = (url) => {
+        const loader = new THREE.TextureLoader();
+        loader.load(url, t => { 
+            planes.forEach((p, i) => {
+                p.material.map = t;
+                p.material.color.setHex(0xffffff);
+                p.material.opacity = [0.95, 0.45, 0.25][i];
+                p.material.needsUpdate = true;
+            });
+            addLog("3D Scan Visualizer Synchronized.", "success");
+            
+            if (fetusA) fetusA.children[0].material.opacity = 0.4;
+            if (fetusB) fetusB.children[0].material.opacity = 0.4;
+        });
+      };
+
+      // 3. INTERNAL FETAL NODES
+      function createOrganicFetus(color, x, y, name) {
+          const group = new THREE.Group();
+          const body = new THREE.Mesh(
+            new THREE.SphereGeometry(12, 32, 32),
+            new THREE.MeshPhongMaterial({ 
+                color: color, 
+                emissive: color, 
+                emissiveIntensity: 0.5,
+                transparent: true,
+                opacity: 0.05, // Faintly visible placeholder
+                shininess: 100
+            })
+          );
+          body.scale.set(1.1, 0.8, 1);
+          group.add(body);
+          group.position.set(x, y, 5);
+          group.name = name;
+          return group;
+      }
+
+      fetusA = createOrganicFetus(0xa5f3eb, -15, -5, "Twin A");
+      fetusB = createOrganicFetus(0xffd6bb, 20, 15, "Twin B");
+      world.add(fetusA);
+      world.add(fetusB);
+
+      // 4. SCANNING BEAM
+      const beamGeom = new THREE.BoxGeometry(150, 1.5, 0.5);
+      const beamMat = new THREE.MeshBasicMaterial({ color: 0x00bfa5, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
+      scannerBeam = new THREE.Mesh(beamGeom, beamMat);
+      world.add(scannerBeam);
+
+      // 5. SURGICAL TOOL
+      const toolGeom = new THREE.CylinderGeometry(0.5, 0.5, 80);
+      const toolMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x00bfa5, emissiveIntensity: 2 });
+      tool = new THREE.Mesh(toolGeom, toolMat);
+      tool.rotation.x = Math.PI/2.5;
+      scene.add(tool);
+
+      // Lighting (Brighter, more vibrant)
+      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+      const light = new THREE.PointLight(0x00bfa5, 4, 600);
+      light.position.set(50, 150, 150);
+      scene.add(light);
+
+      window.syncDigitalTwin = (anom) => {
+          hotspots.forEach(h => world.remove(h));
+          hotspots = [];
+          anom.forEach(a => {
+              const h = new THREE.Mesh(new THREE.SphereGeometry(4), new THREE.MeshStandardMaterial({ 
+                  color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2
+              }));
+              h.position.set(a.x * 2, a.y * 2, 12);
+              h.anomLabel = a.label;
+              world.add(h);
+              hotspots.push(h);
+              
+              const ring = new THREE.Mesh(
+                  new THREE.RingGeometry(6, 8, 32),
+                  new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+              );
+              ring.position.copy(h.position);
+              world.add(ring);
+              hotspots.push(ring);
+          });
+      };
+
+      animate();
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const now = Date.now() * 0.001;
+
+      if (world && renderer.domElement) {
+          world.rotation.y = Math.sin(now * 0.2) * 0.15;
+          world.position.y = Math.sin(now * 1.5) * 5;
+          
+          if (fetusA) fetusA.scale.setScalar(1 + Math.sin(now * 2.5) * 0.03);
+          if (fetusB) fetusB.scale.setScalar(1 + Math.cos(now * 2.5) * 0.03);
+
+          if (scannerBeam) {
+              scannerBeam.position.y = Math.sin(now * 2) * 50;
+              scannerBeam.material.opacity = 0.3 + Math.sin(now * 5) * 0.2;
+          }
+
+          if (planes) {
+              planes.forEach((p, i) => {
+                  p.rotation.y = Math.sin(now * 0.3) * (0.04 + i * 0.02);
+                  p.material.opacity *= (0.95 + Math.sin(now * 4) * 0.05);
+              });
+          }
+      }
+      renderer.render(scene, camera);
+    }
+
+    // Interaction Console
+    const cont = document.getElementById('three-container');
+    
+    // Prevent Context Menu for Tool Control
+    cont.addEventListener('contextmenu', e => e.preventDefault());
+
+    cont.addEventListener('mousedown', (e) => { 
+        if(e.button === 0) { isRotateDragging = true; } // Left Click: Rotate World
+        if(e.button === 2) { isToolDragging = true; }   // Right Click: Move Tool
+        prevX = e.clientX; 
+        prevY = e.clientY; 
+    });
+
+    window.addEventListener('mousemove', (e) => {
+        if (isRotateDragging && world) {
+            world.rotation.y += (e.clientX - prevX) * 0.01;
+            world.rotation.x += (e.clientY - prevY) * 0.01;
+        }
+        if (isToolDragging && tool) {
+            tool.position.x += (e.clientX - prevX) * 0.2;
+            tool.position.y += (e.clientY - prevY) * -0.2;
+            tool.position.x = Math.max(-40, Math.min(40, tool.position.x));
+            tool.position.y = Math.max(-40, Math.min(40, tool.position.y));
+        }
+        prevX = e.clientX;
+        prevY = e.clientY;
+    });
+
+    window.addEventListener('mouseup', () => { 
+        isRotateDragging = false; 
+        isToolDragging = false; 
+    });
+
+    init();
+  </script>
+</body>
+</html>

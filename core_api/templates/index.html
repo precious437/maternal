@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Maternal-Fetal AI • Surgical Prediction System</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap'); body{font-family:'Inter',sans-serif;}</style>
+</head>
+<body class="bg-slate-50">
+  <!-- Paste the FULL TOP NAV from my previous message here (the one with Maternal-Fetal AI logo) -->
+  <!-- SHARED TOP NAVIGATION (COPY THIS EXACT BLOCK INTO EVERY HTML FILE) -->
+<nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm relative">
+  <div class="max-w-7xl mx-auto px-4 lg:px-6 py-4 flex items-center justify-between">
+    <!-- Logo -->
+    <div class="flex items-center gap-x-3">
+      <i class="fa-solid fa-heart-pulse text-2xl lg:text-3xl text-[#00bfa5]"></i>
+      <div>
+        <h1 class="text-xl lg:text-2xl font-semibold text-[#0a3d62]">Maternal-Fetal AI</h1>
+        <p class="text-[10px] lg:text-xs text-slate-500 -mt-1 lg:-mt-0.5">Surgical Prediction</p>
+      </div>
+    </div>
+
+    <!-- Mobile Menu Toggle Button -->
+    <button id="mobileMenuBtn" class="lg:hidden text-2xl text-slate-600 focus:outline-none">
+      <i class="fa-solid fa-bars"></i>
+    </button>
+
+    <!-- Top Nav Buttons (Desktop) -->
+    <div class="hidden lg:flex items-center gap-x-8 text-sm font-medium">
+      <a href="/" class="nav-link flex items-center gap-x-1 hover:text-[#00bfa5]"><i class="fa-solid fa-house"></i> Home</a>
+      <a href="/surgical" class="auth-protected-link hidden items-center gap-x-1 hover:text-[#00bfa5]"><i class="fa-solid fa-robot"></i> Surgical AI</a>
+      <a href="/settings" class="auth-protected-link hidden items-center gap-x-1 hover:text-[#00bfa5]"><i class="fa-solid fa-cog"></i> Settings</a>
+      <a href="/help" class="nav-link flex items-center gap-x-1 hover:text-[#00bfa5]"><i class="fa-solid fa-circle-question"></i> Help</a>
+      
+      <!-- User area -->
+      <div id="user-area" class="flex items-center gap-x-2 bg-slate-100 px-4 py-1 rounded-2xl hidden">
+        <div id="user-icon" class="w-8 h-8 bg-[#0a3d62] text-white rounded-xl flex items-center justify-center text-xs font-bold uppercase">U</div>
+        <span id="user-name" class="text-sm font-medium truncate max-w-[120px]">User</span>
+      </div>
+      
+      <a href="/login" id="auth-button" 
+         class="bg-[#0a3d62] hover:bg-[#00bfa5] text-white px-6 py-2 rounded-3xl text-sm font-medium flex items-center gap-x-2 transition">
+        <i class="fa-solid fa-right-to-bracket" id="auth-icon"></i> <span id="auth-text">Login</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Mobile Menu Dropdown -->
+  <div id="mobileMenu" class="hidden lg:hidden flex-col bg-white border-t border-slate-100 px-6 py-5 space-y-5 absolute top-full left-0 w-full shadow-lg">
+      <a href="/" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-house w-6"></i> Home</a>
+      <a href="/surgical" class="auth-protected-link hidden text-slate-700 font-medium hover:text-[#00bfa5] items-center gap-x-3"><i class="fa-solid fa-robot w-6"></i> Surgical AI</a>
+      <a href="/settings" class="auth-protected-link hidden text-slate-700 font-medium hover:text-[#00bfa5] items-center gap-x-3"><i class="fa-solid fa-cog w-6"></i> Settings</a>
+      <a href="/help" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-circle-question w-6"></i> Help</a>
+      <div class="h-px bg-slate-200 my-2"></div>
+      <a href="/login" class="bg-[#0a3d62] text-white font-bold text-center py-3 rounded-2xl flex items-center justify-center gap-x-2" id="auth-button-mobile">
+        <i class="fa-solid fa-right-to-bracket" id="auth-icon-mobile"></i> <span id="auth-text-mobile">Login</span>
+      </a>
+  </div>
+</nav>
+
+  <div class="max-w-7xl mx-auto px-4 lg:px-6 pt-10 lg:pt-16 pb-16 lg:pb-24">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-12 items-center text-center lg:text-left">
+      <div class="order-2 lg:order-1 flex flex-col items-center lg:items-start">
+        <div class="inline-flex items-center gap-x-2 bg-teal-100 text-teal-700 text-xs lg:text-sm font-medium px-4 py-2 rounded-3xl mb-4 lg:mb-6">
+          <i class="fa-solid fa-shield-halved"></i> Reducing Maternal & Fetal Fatality Rates
+        </div>
+        <h1 class="text-4xl lg:text-6xl font-semibold leading-tight lg:leading-none text-[#0a3d62]">AI Surgical Predictions for High-Risk Pregnancies</h1>
+        <p class="text-lg lg:text-xl text-slate-600 mt-4 lg:mt-6">Real-time YOLO imaging • Risk assessment • 3D simulation • Clinical decisions</p>
+        <a href="/surgical" class="mt-8 lg:mt-10 inline-flex bg-[#0a3d62] hover:bg-[#00bfa5] text-white px-8 py-4 rounded-3xl text-lg font-semibold items-center gap-x-3 w-full justify-center lg:w-auto">
+          Start New Surgical AI Case <i class="fa-solid fa-arrow-right"></i>
+        </a>
+      </div>
+      <!-- Hero visual (Right Side) -->
+      <div class="order-1 lg:order-2 relative flex justify-center items-center h-full w-full max-w-md mx-auto lg:max-w-none">
+        <!-- Decorative blobs -->
+        <div class="absolute inset-0 bg-gradient-to-tr from-[#00bfa5] to-[#0a3d62] rounded-[3rem] blur-2xl opacity-20 animate-pulse transform rotate-6"></div>
+        
+        <div class="relative rounded-[2.5rem] overflow-hidden border-8 border-white shadow-2xl w-full aspect-square md:aspect-[4/3] bg-slate-100">
+          <img src="https://images.unsplash.com/photo-1579684385127-1ef15d508118?auto=format&fit=crop&q=80&w=1000" alt="Maternal AI Care" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-[#0a3d62]/10 mix-blend-overlay"></div>
+          
+          <!-- Floating glassmorphism badge -->
+          <div class="absolute bottom-6 left-6 right-6 bg-white/30 backdrop-blur-xl border border-white/40 rounded-2xl p-5 flex items-center gap-4 text-slate-900 shadow-xl">
+             <div class="bg-[#00bfa5] text-white w-14 h-14 rounded-[14px] flex items-center justify-center text-2xl flex-shrink-0 shadow-inner">
+               <i class="fa-solid fa-microchip"></i>
+             </div>
+             <div>
+               <p class="font-bold text-lg leading-tight">YOLO v8 Processing</p>
+               <p class="text-sm font-medium text-slate-700 mt-0.5">Real-time Fetal Risk Detection</p>
+             </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paste LUMI.AI CHAT WIDGET here (the big code block at the top of this message) -->
+  <script>
+    /* Tailwind init + console ready message */
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mobile Menu Toggle
+      const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+      if(mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', () => {
+          document.getElementById('mobileMenu').classList.toggle('hidden');
+          document.getElementById('mobileMenu').classList.toggle('flex');
+        });
+      }
+
+      const userStr = localStorage.getItem('lumi_user');
+      const authIcon = document.getElementById('auth-icon');
+      const authText = document.getElementById('auth-text');
+      const authIconMobile = document.getElementById('auth-icon-mobile');
+      const authTextMobile = document.getElementById('auth-text-mobile');
+      const userArea = document.getElementById('user-area');
+      const userName = document.getElementById('user-name');
+      const userIcon = document.getElementById('user-icon');
+      const protectedLinks = document.querySelectorAll('.auth-protected-link');
+
+      if (userStr) {
+        try {
+          const user = JSON.parse(userStr);
+          const email = user.email || 'Surgeon';
+          userName.textContent = email;
+          userIcon.textContent = email.charAt(0);
+          userArea.classList.remove('hidden');
+          
+          if(authIcon) authIcon.className = "fa-solid fa-right-from-bracket";
+          if(authText) authText.textContent = "Logout";
+          if(authIconMobile) authIconMobile.className = "fa-solid fa-right-from-bracket";
+          if(authTextMobile) authTextMobile.textContent = "Logout";
+          
+          // Show protected links
+          protectedLinks.forEach(link => {
+            link.classList.remove('hidden');
+            link.classList.add('flex');
+          });
+        } catch(e) {}
+      } else {
+        userArea.classList.add('hidden');
+        if(authIcon) authIcon.className = "fa-solid fa-right-to-bracket";
+        if(authText) authText.textContent = "Login";
+        if(authIconMobile) authIconMobile.className = "fa-solid fa-right-to-bracket";
+        if(authTextMobile) authTextMobile.textContent = "Login";
+        
+        // Hide protected links
+        protectedLinks.forEach(link => {
+          link.classList.add('hidden');
+          link.classList.remove('flex');
+        });
+      }
+    });
+  </script>
+</body>
+</html>

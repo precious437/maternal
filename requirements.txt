@@ -1,0 +1,10 @@
+asgiref==3.11.1
+Django==6.0.4
+django-cors-headers==4.9.0
+djangorestframework==3.17.1
+httpx==0.28.1
+pydicom==3.0.2
+python-dotenv==1.2.2
+whitenoise==6.12.0
+sqlparse==0.5.5
+tzdata==2026.1

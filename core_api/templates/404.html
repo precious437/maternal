@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Page Not Found | Lumi AI</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+</head>
+<body class="bg-slate-950 text-slate-200 h-screen flex flex-col items-center justify-center overflow-hidden">
+    <!-- Background Glow -->
+    <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none"></div>
+
+    <div class="text-center z-10 p-8">
+        <div class="mb-8 inline-flex items-center justify-center w-24 h-24 bg-slate-900 border border-teal-500/30 rounded-3xl shadow-2xl shadow-teal-500/10">
+            <i class="fa-solid fa-microscope text-4xl text-teal-400"></i>
+        </div>
+        
+        <h1 class="text-9xl font-black text-slate-900 tracking-tighter mb-4" style="-webkit-text-stroke: 1px rgba(45, 212, 191, 0.3);">404</h1>
+        <h2 class="text-2xl font-bold text-white mb-2 uppercase tracking-widest">Medical Route Not Found</h2>
+        <p class="text-slate-400 max-w-md mx-auto mb-10">
+            The requested surgical coordinate or diagnostic page does not exist in the current clinical database.
+        </p>
+
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="/" class="px-8 py-3 bg-teal-500 hover:bg-teal-400 text-slate-950 font-bold rounded-2xl transition-all shadow-lg shadow-teal-500/20">
+                <i class="fa-solid fa-house mr-2"></i> Dashboard Home
+            </a>
+            <a href="/surgical" class="px-8 py-3 bg-slate-900 hover:bg-slate-800 border border-slate-800 text-teal-400 font-bold rounded-2xl transition-all">
+                <i class="fa-solid fa-cube mr-2"></i> Return to Chamber
+            </a>
+        </div>
+    </div>
+
+    <div class="absolute bottom-8 text-slate-600 text-xs tracking-widest uppercase">
+        Lumi AI Surgical Assist • Security Protocol 404-X
+    </div>
+</body>
+</html>

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login • Maternal-Fetal AI</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; }
+    .glass-panel {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+  </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex text-slate-800">
+
+  <!-- Left Side: Cinematic Promo / Image -->
+  <div class="hidden lg:flex w-1/2 relative bg-[#0a3d62]">
+    <!-- Background image -->
+    <div class="absolute inset-0 bg-cover bg-center opacity-80 mix-blend-overlay" style="background-image: url('https://i.pinimg.com/736x/80/c8/d9/80c8d9853af189013113757d8cbe4483.jpg');"></div>
+    <div class="absolute inset-0 bg-gradient-to-t from-[#0a3d62] via-transparent to-transparent"></div>
+    
+    <!-- Left Side Content -->
+    <div class="relative z-10 flex flex-col justify-between p-16 w-full max-w-2xl mx-auto h-full text-white">
+      <div>
+        <a href="/" class="inline-flex items-center gap-x-2 text-white/80 hover:text-white transition font-medium backdrop-blur-md bg-white/10 px-5 py-2.5 rounded-full border border-white/20 shadow-sm hover:bg-white/20">
+          <i class="fa-solid fa-arrow-left"></i> Home
+        </a>
+      </div>
+      
+      <div class="mb-12">
+        <i class="fa-solid fa-heart-pulse text-6xl text-[#00bfa5] mb-8"></i>
+        <h1 class="text-5xl font-bold mb-6 leading-tight">Empowering Safe Deliveries with AI</h1>
+        <p class="text-xl text-white/80 font-light leading-relaxed">
+          Pioneering the future of maternal and fetal care. We combine real-time computer vision with deep clinical intelligence to secure every heartbeat.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Side: Auth Form -->
+  <div class="w-full lg:w-1/2 flex items-center justify-center p-8 bg-slate-50 relative">
+    
+    <!-- Mobile Back Button (Only visible on small screens) -->
+    <a href="/" class="lg:hidden absolute top-8 left-8 inline-flex items-center gap-x-2 text-slate-500 hover:text-[#0a3d62] transition font-medium bg-white px-4 py-2 rounded-full border border-slate-200 shadow-sm">
+      <i class="fa-solid fa-arrow-left text-sm"></i> Back
+    </a>
+
+    <div class="w-full max-w-md">
+      <div class="text-center mb-10">
+        <div class="lg:hidden flex justify-center mb-6 mt-8">
+          <i class="fa-solid fa-heart-pulse text-5xl text-[#00bfa5]"></i>
+        </div>
+        <h2 id="formTitle" class="text-4xl font-bold text-[#0a3d62] tracking-tight">Sign In</h2>
+        <p id="formDesc" class="text-slate-500 mt-3 text-lg">Access your clinical dashboard</p>
+      </div>
+
+      <div id="errorMsg" class="hidden mb-6 p-4 bg-red-100 border border-red-200 text-red-700 rounded-2xl text-sm text-center font-medium shadow-sm"></div>
+
+      <form id="loginForm" class="space-y-6">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Email Identity</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-regular fa-envelope"></i>
+            </div>
+            <input id="email" type="email" placeholder="doctor@hospital.com" required 
+                   class="w-full bg-white border border-slate-200 rounded-2xl pl-11 px-5 py-4 focus:ring-4 focus:ring-[#00bfa5]/20 focus:border-[#00bfa5] transition outline-none shadow-sm">
+          </div>
+        </div>
+        
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Security Credential</label>
+          <div class="relative">
+            <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400">
+              <i class="fa-solid fa-lock"></i>
+            </div>
+            <input id="password" type="password" placeholder="•••••••••" required 
+                   class="w-full bg-white border border-slate-200 rounded-2xl pl-11 px-5 py-4 focus:ring-4 focus:ring-[#00bfa5]/20 focus:border-[#00bfa5] transition outline-none shadow-sm">
+          </div>
+        </div>
+
+        <button type="submit" id="submitBtn" 
+                class="w-full bg-[#0a3d62] hover:bg-[#00bfa5] text-white py-4 mt-2 rounded-2xl font-bold text-lg shadow-[0_8px_30px_rgb(10,61,98,0.2)] hover:shadow-[0_8px_30px_rgb(0,191,165,0.3)] transition-all transform hover:-translate-y-1">
+          Sign In
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Successfully logout the user if they reach the login page
+    localStorage.removeItem('lumi_user');
+
+    // CSRF Token helper
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    let isLoginMode = true;
+    const formTitle = document.getElementById('formTitle');
+    const formDesc = document.getElementById('formDesc');
+    const submitBtn = document.getElementById('submitBtn');
+
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+      const endpoint = isLoginMode ? '/api/v1/login/' : '/api/v1/signup/';
+      
+      const originalText = submitBtn.textContent;
+      submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Processing...';
+      submitBtn.classList.add('opacity-80', 'cursor-not-allowed');
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ email, password })
+        });
+
+        const data = await res.json();
+
+        if (data.success) {
+          if (!isLoginMode && !data.user) {
+             errorMsg.className = "mb-6 p-4 bg-teal-50 text-teal-700 border border-teal-200 rounded-2xl text-sm text-center font-medium shadow-sm";
+             errorMsg.innerHTML = '<i class="fa-solid fa-check-circle mr-2"></i>Account created! You can now sign in.';
+             errorMsg.classList.remove('hidden');
+             // Switch back to login
+             isLoginMode = true;
+             formTitle.textContent = "Sign In"; formDesc.textContent = "Access your clinical dashboard"; 
+             submitBtn.textContent = "Sign In"; 
+             submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+          } else {
+             localStorage.setItem('lumi_user', JSON.stringify(data.user || { email: email }));
+             window.location.href = '/surgical';
+          }
+        } else {
+          errorMsg.className = "mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm text-center font-medium shadow-sm";
+          errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> ${isLoginMode ? 'Login' : 'Signup'} Error: ${data.error || "Access Denied"}`;
+          errorMsg.classList.remove('hidden');
+          submitBtn.textContent = originalText;
+          submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+        }
+      } catch (err) {
+        errorMsg.className = "mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-2xl text-sm text-center font-medium shadow-sm";
+        errorMsg.textContent = "Network error. Please ensure Django is running.";
+        errorMsg.classList.remove('hidden');
+        submitBtn.textContent = originalText;
+        submitBtn.classList.remove('opacity-80', 'cursor-not-allowed');
+      }
+    });
+  </script>
+</body>
+</html>
