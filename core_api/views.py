@@ -6,9 +6,7 @@ from django.shortcuts import render
 from .services.supabase_service import SupabaseService
 from .services.ai_service import AIService
 import os
-import asyncio
 import uuid
-from asgiref.sync import async_to_sync
 
 # Import the existing DICOM processor
 import sys
@@ -19,7 +17,7 @@ class VitalsView(APIView):
     def post(self, request):
         try:
             data = request.data
-            result = async_to_sync(SupabaseService.save_vitals)(data)
+            result = SupabaseService.save_vitals(data)
             return Response(result, status=status.HTTP_201_CREATED)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -64,7 +62,7 @@ class FileUploadView(APIView):
 
             # 3. Upload to Supabase Storage (Core Task)
             uploaded_file.seek(0)
-            upload_result = async_to_sync(SupabaseService.upload_file)(uploaded_file, unique_filename)
+            upload_result = SupabaseService.upload_file(uploaded_file, unique_filename)
             
             if not upload_result.get("success"):
                 return Response({"error": f"Storage failure: {upload_result.get('error')}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
@@ -72,7 +70,7 @@ class FileUploadView(APIView):
             # 4. AI Analysis (Isolated Task)
             ai_result = {"success": False, "error": "AI evaluation skipped"}
             try:
-                ai_result = async_to_sync(AIService.analyze_scan)(temp_path)
+                ai_result = AIService.analyze_scan(temp_path)
             except Exception as aix:
                 print(f"AI Service Skip: {str(aix)}")
 
@@ -84,7 +82,7 @@ class FileUploadView(APIView):
                 "analysis_results": ai_result  # Save findings for later inspection
             }
             
-            async_to_sync(SupabaseService.save_scan_metadata)(db_metadata)
+            SupabaseService.save_scan_metadata(db_metadata)
 
             return Response({
                 "success": True,
@@ -110,7 +108,7 @@ class LoginView(APIView):
         try:
             email = request.data.get("email")
             password = request.data.get("password")
-            result = async_to_sync(SupabaseService.verify_login)(email, password)
+            result = SupabaseService.verify_login(email, password)
             if result.get("success"):
                 return Response(result, status=status.HTTP_200_OK)
             return Response(result, status=status.HTTP_401_UNAUTHORIZED)
@@ -122,7 +120,7 @@ class SignupView(APIView):
         try:
             email = request.data.get("email")
             password = request.data.get("password")
-            result = async_to_sync(SupabaseService.signup_user)(email, password)
+            result = SupabaseService.signup_user(email, password)
             if result.get("success"):
                 return Response(result, status=status.HTTP_201_CREATED)
             return Response(result, status=status.HTTP_400_BAD_REQUEST)
@@ -132,7 +130,7 @@ class SignupView(APIView):
 class HistoryView(APIView):
     def get(self, request):
         try:
-            result = async_to_sync(SupabaseService.get_scan_history)()
+            result = SupabaseService.get_scan_history()
             return Response({"success": True, "history": result}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)

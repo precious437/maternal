@@ -16,7 +16,7 @@ class AIService:
     WORKFLOW_ID = getattr(settings, 'ROBOFLOW_WORKFLOW_ID', os.getenv("ROBOFLOW_WORKFLOW_ID", "detect-count-and-visualize"))
     
     @staticmethod
-    async def analyze_scan(file_path):
+    def analyze_scan(file_path):
         """Send image to Roboflow for clinical anomaly detection"""
         if not AIService.API_KEY or AIService.API_KEY == "YOUR_API_KEY":
             logger.warning("AIService: No Roboflow API Key configured.")
@@ -42,8 +42,8 @@ class AIService:
                 }
             }
 
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(url, json=payload)
+            with httpx.Client(timeout=30.0) as client:
+                response = client.post(url, json=payload)
                 
                 if response.status_code == 200:
                     result = response.json()
