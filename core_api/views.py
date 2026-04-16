@@ -152,3 +152,6 @@ def settings_view(request):
 
 def help_view(request):
     return render(request, 'help.html')
+
+def interactive_hub_view(request):
+    return render(request, 'interactive_hub.html')

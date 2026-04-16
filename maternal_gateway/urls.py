@@ -37,4 +37,5 @@ urlpatterns = [
     path('login', frontend_views.login_view, name='login'),
     path('settings', frontend_views.settings_view, name='settings'),
     path('help', frontend_views.help_view, name='help'),
+    path('hub', frontend_views.interactive_hub_view, name='hub'),
 ]
