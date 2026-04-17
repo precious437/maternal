@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -11,13 +12,79 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); 
     body { font-family: 'Inter', sans-serif; }
     
-    /* 3D Container - Full Experience */
-    #three-container { 
-      border-radius: 2rem; overflow: hidden; background: #0a1729; position: relative; 
-      height: 600px; box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.3); border: 2px solid rgba(255,255,255,0.1); 
+    /* â”€â”€â”€ Stage: Side-by-side scan + tool panels â”€â”€â”€â”€â”€â”€â”€ */
+    #stage-container {
+      display: flex; gap: 0;
+      border-radius: 2rem; overflow: hidden;
+      background: #07111e;
+      height: 560px;
+      box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
+      border: 1.5px solid rgba(0,191,165,0.15);
     }
-    @media (max-width: 640px) { #three-container { height: 350px; border-radius: 1.25rem; } }
-    canvas { display: block; border-radius: 2rem; }
+    @media (max-width: 640px) { #stage-container { height: 320px; border-radius: 1.25rem; flex-direction: column; } }
+
+    /* Left: 2D flat scan display */
+    #scan-panel {
+      flex: 1 1 65%;
+      position: relative;
+      background: #030d18;
+      border-right: 1px solid rgba(0,191,165,0.12);
+      overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #scan-img {
+      display: block;
+      max-width: 100%; max-height: 100%;
+      width: auto; height: auto;
+      object-fit: contain;
+      position: relative; z-index: 2;
+      image-rendering: auto;
+    }
+    #scan-placeholder {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      color: rgba(0,191,165,0.3); gap: 12px; pointer-events: none; z-index: 2;
+    }
+    #scan-placeholder i  { font-size: 3rem; }
+    #scan-placeholder p  { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
+    /* The canvas that overlays the image for scan-line + annotations  */
+    #scan-overlay {
+      position: absolute; top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 3;
+    }
+    /* HUD badge inside scan panel */
+    #hud-overlay {
+      position: absolute; left: 14px; top: 14px;
+      padding: 6px 14px; background: rgba(0,191,165,0.9);
+      border-radius: 2rem; color: white; font-weight: 700; font-size: 0.7rem;
+      pointer-events: none; z-index: 20; border: 1px solid rgba(255,255,255,0.2);
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    /* Confidence badge */
+    #conf-badge {
+      position: absolute; right: 14px; top: 14px;
+      padding: 6px 14px; background: rgba(10,61,98,0.9);
+      border-radius: 2rem; color: #00bfa5; font-weight: 700; font-size: 0.7rem;
+      pointer-events: none; z-index: 20; border: 1px solid rgba(0,191,165,0.3);
+      display: none;
+    }
+
+    /* Right: Three.js surgical tool viewport */
+    #tool-viewport {
+      flex: 0 0 35%;
+      position: relative;
+      background: #07111e;
+      overflow: hidden;
+    }
+    #tool-viewport canvas { display: block; width: 100% !important; height: 100% !important; }
+    #tool-label {
+      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+      background: rgba(0,191,165,0.15); border: 1px solid rgba(0,191,165,0.3);
+      color: #00bfa5; font-size: 0.6rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      padding: 5px 14px; border-radius: 2rem; pointer-events: none; z-index: 20;
+      white-space: nowrap;
+    }
 
     /* Side Panel Console */
     .console-card {
@@ -67,21 +134,52 @@
         animation: scanMove 3s infinite ease-in-out;
     }
     @keyframes scanMove { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-
-    #log-toggle-btn {
-      position: absolute; right: 20px; bottom: 20px;
-      padding: 10px 20px; background: #00bfa5; color: white;
-      border-radius: 2rem; font-weight: 600; font-size: 0.8rem;
-      box-shadow: 0 10px 15px -3px rgba(0, 191, 165, 0.3);
-      transition: all 0.3s ease; z-index: 110;
+    
+    @keyframes ping-slow {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
+      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+    }
+    @keyframes ping-slower {
+      0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
+      100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+    }
+    @keyframes floating {
+      0% { transform: translateY(0px) scale(1.05); }
+      50% { transform: translateY(-15px) scale(1.1); }
+      100% { transform: translateY(0px) scale(1.05); }
     }
 
-    #hud-overlay {
-      position: absolute; left: 20px; top: 20px;
-      padding: 8px 16px; background: rgba(0, 191, 165, 0.9);
-      border-radius: 2rem; color: white; font-weight: 700; font-size: 0.75rem;
-      pointer-events: none; z-index: 10; border: 1px solid rgba(255,255,255,0.2);
-      text-transform: uppercase; letter-spacing: 1px;
+    .animate-ping-slow { animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
+    .animate-ping-slower { animation: ping-slower 5s cubic-bezier(0, 0, 0.2, 1) infinite; }
+
+    #log-toggle-btn {
+      position: absolute; left: 14px; bottom: 14px;
+      padding: 8px 16px; background: #00bfa5; color: white;
+      border-radius: 2rem; font-weight: 700; font-size: 0.72rem;
+      box-shadow: 0 6px 12px -2px rgba(0, 191, 165, 0.35);
+      transition: all 0.25s ease; z-index: 110;
+    }
+
+    /* Surgical Tool Selector HUD (lives inside #tool-viewport) */
+    #tool-selector {
+      position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%);
+      display: flex; gap: 6px; z-index: 110;
+    }
+    .tool-btn {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      padding: 8px 12px;
+      background: rgba(10, 23, 41, 0.85);
+      border: 1px solid rgba(0, 191, 165, 0.3);
+      border-radius: 1rem; color: #94a3b8;
+      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; cursor: pointer;
+      transition: all 0.25s ease; backdrop-filter: blur(8px);
+    }
+    .tool-btn i { font-size: 1rem; }
+    .tool-btn:hover, .tool-btn.active {
+      background: rgba(0, 191, 165, 0.2);
+      border-color: #00bfa5; color: #00bfa5;
+      box-shadow: 0 0 16px rgba(0,191,165,0.3);
     }
     
     .step-indicator {
@@ -140,18 +238,35 @@
     
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
       
-      <!-- LEFT: STAGE AREA (3D) -->
+      <!-- LEFT: STAGE AREA (split: 2D scan + 3D tools) -->
       <div class="lg:col-span-8 order-1">
-        <div id="three-container">
-            <div id="hud-overlay">System Active</div>
+        <div id="stage-container">
+
+          <!-- 2D SCAN PANEL -->
+          <div id="scan-panel">
+            <div id="scan-placeholder">
+              <i class="fa-solid fa-ultrasound"></i>
+              <p>Upload a scan to begin</p>
+            </div>
+            <img id="scan-img" src="" alt="Ultrasound scan" style="display:none;">
+            <canvas id="scan-overlay"></canvas>
+            <div id="hud-overlay">Awaiting scan...</div>
+            <div id="conf-badge"></div>
             <button id="log-toggle-btn" onclick="toggleLog()"><i class="fa-solid fa-list-check mr-1"></i> Audit Log</button>
             <div id="clinical-log">
-                <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0">
-                    <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Audit Path</span>
-                    <button onclick="toggleLog()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
-                </div>
-                <div id="log-content" class="p-4 flex-1 overflow-y-auto"></div>
+              <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0">
+                <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Audit Path</span>
+                <button onclick="toggleLog()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+              </div>
+              <div id="log-content" class="p-4 flex-1 overflow-y-auto"></div>
             </div>
+          </div>
+
+          <!-- 3D TOOL VIEWPORT -->
+          <div id="tool-viewport">
+            <div id="tool-label">Select Instrument â†“</div>
+          </div>
+
         </div>
 
         <div class="mt-4 lg:mt-6 flex flex-col sm:flex-row items-center justify-between p-4 lg:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
@@ -465,7 +580,7 @@
                 </div>
                 <div>
                   <div class="text-[10px] font-black text-slate-700 truncate max-w-[140px]">${item.filename || 'Diagnostic Record'}</div>
-                  <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${date} • ${item.processed_as || 'SCAN'}</div>
+                  <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${date} â€¢ ${item.processed_as || 'SCAN'}</div>
                 </div>
               </div>
               <i class="fa-solid fa-arrow-right-long text-[10px] text-slate-300 group-hover:text-[#00bfa5] group-hover:translate-x-1 transition-all"></i>
@@ -487,259 +602,409 @@
     }
 
     function inspectHistoryItem(item) {
-      addLog(`Revisiting analysis for: ${item.filename}`, "info");
-      
-      // Update Preview
-      document.getElementById('previewContainer').classList.remove('hidden');
-      const canvas = document.getElementById('previewCanvas');
-      const ctx = canvas.getContext('2d');
-      const img = new Image();
-      img.crossOrigin = "anonymous";
-      img.onload = () => {
-          canvas.width = img.width; canvas.height = img.height;
-          ctx.drawImage(img, 0, 0);
-      };
-      img.src = item.image_url;
-
-      // Update 3D
-      if (window.updateScanHologram) window.updateScanHologram(item.image_url);
-      
+      addLog(`Revisiting analysis for: ${item.filename}`, 'info');
+      // Load into the 2D scan viewer
+      window.updateScanHologram(item.image_url, []);
       if (item.analysis_results && item.analysis_results.success) {
         renderClinicalReport(item.analysis_results);
-        syncDigitalTwin(item.analysis_results.anomalies);
+        window.syncDigitalTwin(item.analysis_results.anomalies);
       }
     }
 
     // Initial Load
     document.addEventListener('DOMContentLoaded', loadHistory);
 
-    // 3D Rehearsal Engine
-    let scene, camera, renderer, tool, fetusA, fetusB, scanHologram, world, uterus;
-    let hotspots = [];
-    let isRotateDragging = false, isToolDragging = false;
+    // =====================================================================
+    // 2D SCAN ENGINE  â€” left panel, pure canvas, no perspective transforms
+    // =====================================================================
+    const scanOverlay  = document.getElementById('scan-overlay');
+    const scanCtx      = scanOverlay.getContext('2d');
+    const scanImg      = document.getElementById('scan-img');
+    const scanPH       = document.getElementById('scan-placeholder');
+    const hudEl        = document.getElementById('hud-overlay');
+    const confBadge    = document.getElementById('conf-badge');
+
+    // State
+    let scanDetections = [];   // [{x,y,w,h,label,conf}] in image-pixel coords
+    let scanLineY      = 0;    // current sweep Y in canvas coords
+    let scanLineDir    = 1;    // +1 down, -1 up
+    let noiseTimer     = 0;
+    let noiseAlpha     = 0;
+    let scanRAF        = null;
+
+    // Sync canvas size to the rendered image area
+    function _syncOverlaySize() {
+      const panel  = document.getElementById('scan-panel');
+      scanOverlay.width  = panel.clientWidth;
+      scanOverlay.height = panel.clientHeight;
+    }
+
+    // Translate image-pixel detection coords â†’ canvas coords
+    // (the img element is centred with object-fit:contain)
+    function _imgRect() {
+      const r   = scanImg.getBoundingClientRect();
+      const pr  = document.getElementById('scan-panel').getBoundingClientRect();
+      return {
+        x: r.left - pr.left,
+        y: r.top  - pr.top,
+        w: r.width,
+        h: r.height,
+      };
+    }
+
+    function _draw2D(now) {
+      scanRAF = requestAnimationFrame(_draw2D);
+      _syncOverlaySize();
+      const cw = scanOverlay.width;
+      const ch = scanOverlay.height;
+      scanCtx.clearRect(0, 0, cw, ch);
+
+      if (!scanImg.src || scanImg.style.display === 'none') return;
+
+      const ir = _imgRect();   // where the image sits inside the canvas
+
+      // â”€â”€ 1. Scan-line sweep â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const speed = ch * 0.003;         // ~0.3% of canvas height per frame
+      scanLineY += scanLineDir * speed;
+      if (scanLineY > ir.y + ir.h) { scanLineY = ir.y + ir.h; scanLineDir = -1; }
+      if (scanLineY < ir.y)         { scanLineY = ir.y;        scanLineDir =  1; }
+
+      // Center-fade: brightest in the middle of the scan area
+      const progY    = (scanLineY - ir.y) / ir.h;   // 0â†’1
+      const edgeFade = 1 - Math.abs(progY - 0.5) * 1.6;
+      const lineAlpha = Math.max(0, Math.min(0.7, edgeFade));
+
+      // Main glow bar
+      const grad = scanCtx.createLinearGradient(ir.x, scanLineY - 6, ir.x, scanLineY + 6);
+      grad.addColorStop(0,   `rgba(0,255,200,0)`);
+      grad.addColorStop(0.5, `rgba(0,255,200,${lineAlpha})`);
+      grad.addColorStop(1,   `rgba(0,255,200,0)`);
+      scanCtx.fillStyle = grad;
+      scanCtx.fillRect(ir.x, scanLineY - 6, ir.w, 12);
+
+      // Hard bright core line at the centre
+      scanCtx.beginPath();
+      scanCtx.moveTo(ir.x, scanLineY);
+      scanCtx.lineTo(ir.x + ir.w, scanLineY);
+      scanCtx.strokeStyle = `rgba(0,255,200,${lineAlpha * 0.9})`;
+      scanCtx.lineWidth   = 1.2;
+      scanCtx.stroke();
+
+      // â”€â”€ 2. Probe noise flicker (simulates live ultrasound grain) â”€â”€â”€â”€â”€
+      noiseTimer += 0.016;
+      if (noiseTimer > 0.07) {
+        noiseTimer  = 0;
+        noiseAlpha  = 0.015 + Math.random() * 0.02;
+      }
+      // Thin random horizontal lines inside the image area
+      for (let n = 0; n < 4; n++) {
+        const ny = ir.y + Math.random() * ir.h;
+        scanCtx.beginPath();
+        scanCtx.moveTo(ir.x, ny);
+        scanCtx.lineTo(ir.x + ir.w, ny);
+        scanCtx.strokeStyle = `rgba(255,255,255,${noiseAlpha})`;
+        scanCtx.lineWidth   = 0.5;
+        scanCtx.stroke();
+      }
+
+      // â”€â”€ 3. Clinical corner frame (tight to image) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const arm = 16, thick = 2;
+      const corners = [
+        [ir.x,         ir.y,          1,  1],
+        [ir.x + ir.w,  ir.y,         -1,  1],
+        [ir.x + ir.w,  ir.y + ir.h, -1, -1],
+        [ir.x,         ir.y + ir.h,  1, -1],
+      ];
+      scanCtx.strokeStyle = 'rgba(0,191,165,0.8)';
+      scanCtx.lineWidth   = thick;
+      corners.forEach(([cx, cy, dx, dy]) => {
+        scanCtx.beginPath();
+        scanCtx.moveTo(cx + dx * arm, cy);
+        scanCtx.lineTo(cx, cy);
+        scanCtx.lineTo(cx, cy + dy * arm);
+        scanCtx.stroke();
+      });
+
+      // â”€â”€ 4. YOLO anomaly brackets & labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+      const scaleX = ir.w / (scanImg.naturalWidth  || ir.w);
+      const scaleY = ir.h / (scanImg.naturalHeight || ir.h);
+
+      scanDetections.forEach((det, i) => {
+        const bx = ir.x + det.x * scaleX;
+        const by = ir.y + det.y * scaleY;
+        const bw = det.w * scaleX;
+        const bh = det.h * scaleY;
+
+        const pulse = 1 + Math.sin(now * 0.004 + i * 0.9) * 0.03;
+        const px    = bx + bw * (1 - pulse) * 0.5;
+        const py    = by + bh * (1 - pulse) * 0.5;
+        const pw    = bw * pulse;
+        const ph    = bh * pulse;
+
+        const isCrit   = det.label && (det.label.toLowerCase().includes('critical') || det.label.toLowerCase().includes('previa'));
+        const boxColor = isCrit ? 'rgba(239,68,68,' : 'rgba(0,191,165,';
+
+        // Corner bracket annotation style
+        const ba = 0.85;
+        scanCtx.strokeStyle = `${boxColor}${ba})`;
+        scanCtx.lineWidth   = 2;
+        const cs = Math.min(pw, ph) * 0.22;  // corner arm size
+
+        [[px, py, 1, 1], [px+pw, py, -1, 1], [px+pw, py+ph, -1, -1], [px, py+ph, 1, -1]].forEach(([bx2, by2, ddx, ddy]) => {
+          scanCtx.beginPath();
+          scanCtx.moveTo(bx2 + ddx * cs, by2);
+          scanCtx.lineTo(bx2, by2);
+          scanCtx.lineTo(bx2, by2 + ddy * cs);
+          scanCtx.stroke();
+        });
+
+        // Pulsing ring at box centre
+        const cx2 = px + pw / 2;
+        const cy2 = py + ph / 2;
+        const ringR = Math.min(pw, ph) * 0.38 * pulse;
+        const ringAlpha = 0.18 + Math.abs(Math.sin(now * 0.004 + i)) * 0.22;
+        scanCtx.beginPath();
+        scanCtx.arc(cx2, cy2, ringR, 0, Math.PI * 2);
+        scanCtx.strokeStyle = `${boxColor}${ringAlpha})`;
+        scanCtx.lineWidth   = 1.5;
+        scanCtx.stroke();
+
+        // Label tag
+        const label = det.label || 'Finding';
+        const conf  = det.conf  ? `${Math.round(det.conf * 100)}%` : '';
+        const tag   = `${label}  ${conf}`.trim();
+        scanCtx.font         = 'bold 10px Inter, sans-serif';
+        const tw             = scanCtx.measureText(tag).width;
+        const tagX = px;
+        const tagY = py > 20 ? py - 6 : py + ph + 14;
+
+        scanCtx.fillStyle = isCrit ? 'rgba(239,68,68,0.88)' : 'rgba(0,191,165,0.88)';
+        scanCtx.beginPath();
+        scanCtx.roundRect(tagX - 4, tagY - 11, tw + 10, 15, 4);
+        scanCtx.fill();
+        scanCtx.fillStyle = '#ffffff';
+        scanCtx.fillText(tag, tagX + 1, tagY);
+      });
+    }
+
+    // Start the 2D loop immediately
+    _draw2D(0);
+
+    // Called to load a new scan image and set detections
+    window.updateScanHologram = (url, detections = []) => {
+      scanDetections = detections;
+
+      scanImg.onload = () => {
+        scanPH.style.display   = 'none';
+        scanImg.style.display  = 'block';
+        hudEl.textContent      = 'Scan Active â€” Probe Sweep â†•';
+        hudEl.style.background = 'rgba(0,191,165,0.9)';
+        _syncOverlaySize();
+        addLog('Scan loaded at native resolution â€” probe sweep active.', 'success');
+      };
+      scanImg.src         = url;
+      scanImg.crossOrigin = 'anonymous';
+    };
+
+    // Anomaly sync: receives [{x,y,w,h,label,conf}] or legacy [{x,y,label}]
+    window.syncDigitalTwin = (anom) => {
+      if (!anom || !anom.length) { scanDetections = []; return; }
+
+      scanDetections = anom.map(a => ({
+        // Support both bbox-style and legacy centre-point style
+        x:     a.bbox ? a.bbox[0] : (a.x || 0),
+        y:     a.bbox ? a.bbox[1] : (a.y || 0),
+        w:     a.bbox ? a.bbox[2] : (scanImg.naturalWidth  * 0.12 || 80),
+        h:     a.bbox ? a.bbox[3] : (scanImg.naturalHeight * 0.12 || 60),
+        label: a.label || 'Finding',
+        conf:  a.confidence || a.conf || null,
+      }));
+
+      const n = scanDetections.length;
+      if (n > 0) {
+        confBadge.style.display  = 'block';
+        confBadge.textContent    = `${n} Finding${n !== 1 ? 's' : ''} Detected`;
+        hudEl.style.background   = 'rgba(239,68,68,0.9)';
+        hudEl.textContent        = 'AI Lock â€” Anomaly Detected';
+      }
+
+      addLog(`${n} intelligence marker${n !== 1 ? 's' : ''} locked onto scan.`, 'success');
+    };
+
+    // =====================================================================
+    // THREE.JS TOOL VIEWPORT â€” right panel only, no scan plane ever
+    // =====================================================================
+    let scene, camera, renderer, world;
+    let activeTool     = null;
+    let activeToolName = 'trocar';
+    let isToolDragging = false;
     let prevX = 0, prevY = 0;
 
-    function init() {
-      const container = document.getElementById('three-container');
-      if (!container) return;
-      
+    function initToolViewport() {
+      const vp = document.getElementById('tool-viewport');
+      if (!vp) return;
+
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0a1729); // Deep clinical blue
+      scene.background = new THREE.Color(0x07111e);
 
-      camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 1, 2000);
-      camera.position.set(0, 40, 180);
+      camera = new THREE.PerspectiveCamera(38, vp.clientWidth / vp.clientHeight, 1, 2000);
+      camera.position.set(0, 15, 170);
 
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
-      renderer.setPixelRatio(window.devicePixelRatio);
-      renderer.setSize(container.clientWidth, container.clientHeight);
-      container.innerHTML = ''; // Clear any previous instance
-      container.appendChild(renderer.domElement);
-      
-      // Re-apply overlay elements
-      const hud = document.createElement('div'); hud.id = "hud-overlay"; hud.textContent = "System Initializing...";
-      container.appendChild(hud);
-      
-      const btn = document.createElement('button'); btn.id = "log-toggle-btn"; btn.innerHTML = '<i class="fa-solid fa-list-check mr-1"></i> Audit Log';
-      btn.onclick = toggleLog;
-      container.appendChild(btn);
-
-      const log = document.createElement('div'); log.id = "clinical-log";
-      log.innerHTML = `
-          <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0">
-              <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Audit Path</span>
-              <button onclick="toggleLog()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
-          </div>
-          <div id="log-content" class="p-4 flex-1 overflow-y-auto"></div>`;
-      container.appendChild(log);
+      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(vp.clientWidth, vp.clientHeight);
+      Object.assign(renderer.domElement.style, { position: 'absolute', top: '0', left: '0' });
+      vp.appendChild(renderer.domElement);
 
       world = new THREE.Group();
       scene.add(world);
 
-      // 1. ANATOMICAL FOUNDATION (The Maternal Shell)
-      // Representing the abdomen for better clinical context
-      const abdomenGeom = new THREE.SphereGeometry(60, 32, 32);
-      const abdomenMat = new THREE.MeshPhongMaterial({ 
-          color: 0x00bfa5, 
-          transparent: true, 
-          opacity: 0.1,
-          wireframe: true,
-          emissive: 0x00bfa5,
-          emissiveIntensity: 0.1
+      // Subtle grid floor
+      const grid = new THREE.GridHelper(300, 30, 0x00bfa5, 0x0d2136);
+      grid.position.y = -90;
+      grid.material.opacity = 0.12;
+      grid.material.transparent = true;
+      world.add(grid);
+
+      // Clinical lighting
+      scene.add(new THREE.AmbientLight(0xc8dcf0, 0.55));
+      const key = new THREE.DirectionalLight(0xffffff, 1.2);
+      key.position.set(80, 160, 120);
+      scene.add(key);
+      const front = new THREE.PointLight(0x00bfa5, 3.5, 500);
+      front.position.set(0, 60, 120);
+      scene.add(front);
+      const rim = new THREE.PointLight(0x00bfa5, 3.5, 500);
+      rim.position.set(-60, 80, 80);
+      scene.add(rim);
+      const fill = new THREE.PointLight(0x0a3d62, 2, 400);
+      fill.position.set(60, -40, 80);
+      scene.add(fill);
+
+      buildToolSelector();
+      spawnTool('trocar');
+      animateTool();
+
+      // Right-click drag to move tool
+      vp.addEventListener('contextmenu', e => e.preventDefault());
+      vp.addEventListener('mousedown',   e => { if (e.button === 2) { isToolDragging = true; prevX = e.clientX; prevY = e.clientY; } });
+      window.addEventListener('mousemove', e => {
+        if (isToolDragging && activeTool) {
+          activeTool.position.x += (e.clientX - prevX) * 0.18;
+          activeTool.position.y -= (e.clientY - prevY) * 0.18;
+          activeTool.position.x  = Math.max(-40, Math.min(40, activeTool.position.x));
+          activeTool.position.y  = Math.max(-40, Math.min(40, activeTool.position.y));
+          prevX = e.clientX; prevY = e.clientY;
+        }
       });
-      uterus = new THREE.Mesh(abdomenGeom, abdomenMat);
-      uterus.scale.set(1.4, 1, 1.2); // Anatomically appropriate ellipsoid
-      world.add(uterus);
-
-      // 2. SCAN HOLOGRAM (The Animated Scan Engine)
-      const scanGroup = new THREE.Group();
-      world.add(scanGroup);
-      
-      const createScanPlane = (opacity, z) => {
-          const mat = new THREE.MeshBasicMaterial({ 
-              transparent: true, 
-              opacity: 0.1, // Slight visible placeholder
-              color: 0x0ea5e9,
-              blending: THREE.AdditiveBlending, 
-              side: THREE.DoubleSide 
-          });
-          const mesh = new THREE.Mesh(new THREE.PlaneGeometry(120, 90), mat);
-          mesh.position.set(0, 0, z);
-          scanGroup.add(mesh);
-          return mesh;
-      };
-
-      planes = [
-          createScanPlane(0.8, 0),
-          createScanPlane(0.3, -5),
-          createScanPlane(0.1, -10)
-      ];
-
-      window.updateScanHologram = (url) => {
-        const loader = new THREE.TextureLoader();
-        loader.load(url, t => { 
-            planes.forEach((p, i) => {
-                p.material.map = t;
-                p.material.color.setHex(0xffffff);
-                p.material.opacity = [0.95, 0.45, 0.25][i];
-                p.material.needsUpdate = true;
-            });
-            addLog("3D Scan Visualizer Synchronized.", "success");
-            
-            if (fetusA) fetusA.children[0].material.opacity = 0.4;
-            if (fetusB) fetusB.children[0].material.opacity = 0.4;
-        });
-      };
-
-      // 3. INTERNAL FETAL NODES
-      function createOrganicFetus(color, x, y, name) {
-          const group = new THREE.Group();
-          const body = new THREE.Mesh(
-            new THREE.SphereGeometry(12, 32, 32),
-            new THREE.MeshPhongMaterial({ 
-                color: color, 
-                emissive: color, 
-                emissiveIntensity: 0.5,
-                transparent: true,
-                opacity: 0.05, // Faintly visible placeholder
-                shininess: 100
-            })
-          );
-          body.scale.set(1.1, 0.8, 1);
-          group.add(body);
-          group.position.set(x, y, 5);
-          group.name = name;
-          return group;
-      }
-
-      fetusA = createOrganicFetus(0xa5f3eb, -15, -5, "Twin A");
-      fetusB = createOrganicFetus(0xffd6bb, 20, 15, "Twin B");
-      world.add(fetusA);
-      world.add(fetusB);
-
-      // 4. SCANNING BEAM
-      const beamGeom = new THREE.BoxGeometry(150, 1.5, 0.5);
-      const beamMat = new THREE.MeshBasicMaterial({ color: 0x00bfa5, transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending });
-      scannerBeam = new THREE.Mesh(beamGeom, beamMat);
-      world.add(scannerBeam);
-
-      // 5. SURGICAL TOOL
-      const toolGeom = new THREE.CylinderGeometry(0.5, 0.5, 80);
-      const toolMat = new THREE.MeshPhongMaterial({ color: 0xffffff, emissive: 0x00bfa5, emissiveIntensity: 2 });
-      tool = new THREE.Mesh(toolGeom, toolMat);
-      tool.rotation.x = Math.PI/2.5;
-      scene.add(tool);
-
-      // Lighting (Brighter, more vibrant)
-      scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-      const light = new THREE.PointLight(0x00bfa5, 4, 600);
-      light.position.set(50, 150, 150);
-      scene.add(light);
-
-      window.syncDigitalTwin = (anom) => {
-          hotspots.forEach(h => world.remove(h));
-          hotspots = [];
-          anom.forEach(a => {
-              const h = new THREE.Mesh(new THREE.SphereGeometry(4), new THREE.MeshStandardMaterial({ 
-                  color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 2
-              }));
-              h.position.set(a.x * 2, a.y * 2, 12);
-              h.anomLabel = a.label;
-              world.add(h);
-              hotspots.push(h);
-              
-              const ring = new THREE.Mesh(
-                  new THREE.RingGeometry(6, 8, 32),
-                  new THREE.MeshBasicMaterial({ color: 0xef4444, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
-              );
-              ring.position.copy(h.position);
-              world.add(ring);
-              hotspots.push(ring);
-          });
-      };
-
-      animate();
+      window.addEventListener('mouseup', () => { isToolDragging = false; });
     }
 
-    function animate() {
-      requestAnimationFrame(animate);
+    function animateTool() {
+      requestAnimationFrame(animateTool);
       const now = Date.now() * 0.001;
-
-      if (world && renderer.domElement) {
-          world.rotation.y = Math.sin(now * 0.2) * 0.15;
-          world.position.y = Math.sin(now * 1.5) * 5;
-          
-          if (fetusA) fetusA.scale.setScalar(1 + Math.sin(now * 2.5) * 0.03);
-          if (fetusB) fetusB.scale.setScalar(1 + Math.cos(now * 2.5) * 0.03);
-
-          if (scannerBeam) {
-              scannerBeam.position.y = Math.sin(now * 2) * 50;
-              scannerBeam.material.opacity = 0.3 + Math.sin(now * 5) * 0.2;
-          }
-
-          if (planes) {
-              planes.forEach((p, i) => {
-                  p.rotation.y = Math.sin(now * 0.3) * (0.04 + i * 0.02);
-                  p.material.opacity *= (0.95 + Math.sin(now * 4) * 0.05);
-              });
-          }
+      if (activeTool) {
+        activeTool.position.y = 8 + Math.sin(now * 1.5) * 4;
+        activeTool.rotation.z = Math.sin(now * 0.45) * 0.04;
+        activeTool.rotation.y = Math.sin(now * 0.28) * 0.05;
       }
+      if (world) world.rotation.y = Math.sin(now * 0.09) * 0.07;
       renderer.render(scene, camera);
     }
 
-    // Interaction Console
-    const cont = document.getElementById('three-container');
-    
-    // Prevent Context Menu for Tool Control
-    cont.addEventListener('contextmenu', e => e.preventDefault());
+    /* â”€â”€â”€ SURGICAL INSTRUMENT FACTORY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    const MAT = {
+      steel:     () => new THREE.MeshStandardMaterial({ color: 0xdce8f0, metalness: 0.95, roughness: 0.12 }),
+      darkSteel: () => new THREE.MeshStandardMaterial({ color: 0x5a6e7e, metalness: 0.9,  roughness: 0.2  }),
+      teal:      () => new THREE.MeshStandardMaterial({ color: 0x00bfa5, metalness: 0.6,  roughness: 0.3, emissive: 0x00bfa5, emissiveIntensity: 0.25 }),
+      red:       () => new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.5,  roughness: 0.35 }),
+      gold:      () => new THREE.MeshStandardMaterial({ color: 0xd4a843, metalness: 0.8,  roughness: 0.2  }),
+      white:     () => new THREE.MeshStandardMaterial({ color: 0xf0f4f8, metalness: 0.2,  roughness: 0.7  }),
+    };
+    const cyl = (rT, rB, h, s=24) => new THREE.CylinderGeometry(rT, rB, h, s);
 
-    cont.addEventListener('mousedown', (e) => { 
-        if(e.button === 0) { isRotateDragging = true; } // Left Click: Rotate World
-        if(e.button === 2) { isToolDragging = true; }   // Right Click: Move Tool
-        prevX = e.clientX; 
-        prevY = e.clientY; 
-    });
+    function buildTrocar() {
+      const g = new THREE.Group();
+      const hm = new THREE.Mesh(cyl(5, 6, 28), MAT.white()); hm.position.y = -42; g.add(hm);
+      for (let i = 0; i < 5; i++) {
+        const r = new THREE.Mesh(cyl(6.2, 6.2, 1.5, 20), MAT.darkSteel()); r.position.y = -32 + i * 5; g.add(r);
+      }
+      const sh = new THREE.Mesh(cyl(2, 2, 55), MAT.steel()); sh.position.y = 3; g.add(sh);
+      const hub = new THREE.Mesh(cyl(7, 6, 10, 32), MAT.darkSteel()); hub.position.y = -22; g.add(hub);
+      const tip = new THREE.Mesh(cyl(0, 2, 12), MAT.steel()); tip.position.y = 36; g.add(tip);
+      const val = new THREE.Mesh(cyl(3.5, 3.5, 3, 20), MAT.teal()); val.position.y = -17; g.add(val);
+      g.rotation.x = Math.PI / 2.4; g.scale.setScalar(0.65); return g;
+    }
 
-    window.addEventListener('mousemove', (e) => {
-        if (isRotateDragging && world) {
-            world.rotation.y += (e.clientX - prevX) * 0.01;
-            world.rotation.x += (e.clientY - prevY) * 0.01;
-        }
-        if (isToolDragging && tool) {
-            tool.position.x += (e.clientX - prevX) * 0.2;
-            tool.position.y += (e.clientY - prevY) * -0.2;
-            tool.position.x = Math.max(-40, Math.min(40, tool.position.x));
-            tool.position.y = Math.max(-40, Math.min(40, tool.position.y));
-        }
-        prevX = e.clientX;
-        prevY = e.clientY;
-    });
+    function buildNeedleDriver() {
+      const g = new THREE.Group();
+      const rg = new THREE.TorusGeometry(5, 1.2, 12, 32);
+      [[-4, -50], [4, -42]].forEach(([x, y]) => {
+        const r = new THREE.Mesh(rg, MAT.steel()); r.position.set(x, y, 0); g.add(r);
+      });
+      const rt = new THREE.Mesh(cyl(3.5, 3, 20, 16), MAT.darkSteel()); rt.position.y = -28; g.add(rt);
+      const sh = new THREE.Mesh(cyl(1.5, 1.5, 60), MAT.white()); sh.position.y = 4; g.add(sh);
+      const jb = new THREE.Mesh(new THREE.BoxGeometry(4, 10, 3), MAT.gold()); jb.position.y = 36; g.add(jb);
+      [1.5, -1.5].forEach(ox => {
+        const j = new THREE.Mesh(new THREE.BoxGeometry(1.5, 8, 2), MAT.steel()); j.position.set(ox, 36, 0); g.add(j);
+      });
+      const tip = new THREE.Mesh(cyl(0, 1, 6), MAT.steel()); tip.position.y = 42; g.add(tip);
+      g.rotation.x = Math.PI / 2.4; g.scale.setScalar(0.65); return g;
+    }
 
-    window.addEventListener('mouseup', () => { 
-        isRotateDragging = false; 
-        isToolDragging = false; 
-    });
+    function buildSuction() {
+      const g = new THREE.Group();
+      const gr = new THREE.Mesh(cyl(6, 5, 30, 12), MAT.white()); gr.position.y = -42; g.add(gr);
+      const tr = new THREE.Mesh(new THREE.TorusGeometry(8, 1.2, 8, 16, Math.PI * 0.6), MAT.darkSteel());
+      tr.position.set(0, -40, 0); tr.rotation.z = -Math.PI * 0.15; g.add(tr);
+      [[MAT.teal(), -28], [MAT.red(), -20]].forEach(([mat, y]) => {
+        const b = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 7, 12), mat);
+        b.position.set(5, y, 0); b.rotation.z = Math.PI / 2; g.add(b);
+      });
+      const hub = new THREE.Mesh(cyl(5, 4, 10, 24), MAT.darkSteel()); hub.position.y = -12; g.add(hub);
+      const ca  = new THREE.Mesh(cyl(2.2, 2.2, 65), MAT.steel()); ca.position.y = 10; g.add(ca);
+      const tb  = new THREE.Mesh(cyl(1.2, 1.2, 14), MAT.teal());
+      tb.rotation.z = Math.PI / 2; tb.position.set(12, -16, 0); g.add(tb);
+      const tip = new THREE.Mesh(cyl(2.2, 0, 5), MAT.steel()); tip.position.y = 44; g.add(tip);
+      g.rotation.x = Math.PI / 2.4; g.scale.setScalar(0.65); return g;
+    }
 
-    init();
+    const TOOLS = {
+      trocar:  { build: buildTrocar,       icon: 'fa-syringe', label: 'Trocar'        },
+      needle:  { build: buildNeedleDriver, icon: 'fa-scalpel', label: 'Needle Driver' },
+      suction: { build: buildSuction,      icon: 'fa-droplet', label: 'Suction'       },
+    };
+
+    function spawnTool(name) {
+      if (activeTool) scene.remove(activeTool);
+      activeToolName = name;
+      activeTool     = TOOLS[name].build();
+      scene.add(activeTool);
+      const lbl = document.getElementById('tool-label');
+      if (lbl) lbl.textContent = TOOLS[name].label;
+      addLog(`Instrument loaded: ${TOOLS[name].label}`, 'info');
+      document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === name));
+    }
+
+    function buildToolSelector() {
+      const existing = document.getElementById('tool-selector');
+      if (existing) existing.remove();
+      const vp  = document.getElementById('tool-viewport');
+      const sel = document.createElement('div');
+      sel.id = 'tool-selector';
+      Object.entries(TOOLS).forEach(([key, cfg]) => {
+        const btn = document.createElement('button');
+        btn.className    = 'tool-btn';
+        btn.dataset.tool = key;
+        btn.innerHTML    = `<i class="fa-solid ${cfg.icon}"></i>${cfg.label}`;
+        btn.onclick      = () => spawnTool(key);
+        sel.appendChild(btn);
+      });
+      vp.appendChild(sel);
+    }
+
+    // Boot both engines
+    initToolViewport();
   </script>
 </body>
 </html>
