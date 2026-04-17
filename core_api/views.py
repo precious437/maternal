@@ -7,6 +7,10 @@ from .services.supabase_service import SupabaseService
 from .services.ai_service import AIService
 import os
 import uuid
+import traceback
+import logging
+
+logger = logging.getLogger(__name__)
 
 # Import the existing DICOM processor
 import sys
@@ -92,8 +96,9 @@ class FileUploadView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            print(f"CRITICAL UPLOAD ERROR: {str(e)}")
-            return Response({"error": f"Critical upload failure: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            tb = traceback.format_exc()
+            logger.error(f"UPLOAD ERROR: {str(e)}\n{tb}")
+            return Response({"error": f"Upload failure: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         finally:
             if temp_path:
                 # Ensure file is closed before removal

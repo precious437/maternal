@@ -400,7 +400,8 @@
           }
           addLog('Analysis complete. ' + (ai ? (ai.count || 0) + ' finding(s) detected.' : 'No findings.'), 'success');
         } else {
-          addLog('Upload error: ' + (data.error || 'Unknown'), 'error');
+          var errMsg = data.error || ('Server error ' + res.status);
+          addLog('Upload error: ' + errMsg, 'error');
         }
       } catch(e) {
         addLog('Network error: ' + e.message, 'error');
