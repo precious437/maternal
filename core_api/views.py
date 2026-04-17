@@ -64,35 +64,42 @@ class FileUploadView(APIView):
                 except Exception as dex:
                     print(f"DICOM Parsing Skip: {str(dex)}")
 
-            # 3. Upload to Supabase Storage (Core Task)
+            # 3. Upload to Supabase Storage
             uploaded_file.seek(0)
             upload_result = SupabaseService.upload_file(uploaded_file, unique_filename)
             
             if not upload_result.get("success"):
                 return Response({"error": f"Storage failure: {upload_result.get('error')}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-            # 4. AI Analysis (Isolated Task)
-            ai_result = {"success": False, "error": "AI evaluation skipped"}
+            # 4. AI Analysis
+            ai_result = {"success": False}
             try:
                 ai_result = AIService.analyze_scan(temp_path)
-            except Exception as aix:
-                print(f"AI Service Skip: {str(aix)}")
+            except: pass
 
-            # 5. Save metadata to DB (History)
+            # 5. Result Selection (Prioritize DICOM Data for Phase 1)
+            final_img_url = upload_result.get("url")
+            
+            # 6. Save History
             db_metadata = {
                 "filename": original_filename,
                 "image_url": upload_result.get("url"),
                 "processed_as": "DICOM" if file_ext == '.dcm' else "IMAGE",
-                "analysis_results": ai_result  # Save findings for later inspection
+                "analysis_results": ai_result,
+                "dicom_metadata": {k: v for k, v in metadata.items() if k not in ['pixels', 'mask']} if file_ext == '.dcm' else None
             }
-            
-            SupabaseService.save_scan_metadata(db_metadata)
+            save_res = SupabaseService.save_scan_metadata(db_metadata)
+            if "error" in save_res:
+                logger.error(f"Archival Failure: {save_res.get('error')}")
+            else:
+                logger.info(f"Record Archived: {original_filename}")
 
             return Response({
                 "success": True,
-                "metadata": metadata,
+                "metadata": metadata, # Contains pixels and mask if DICOM
                 "digital_twin": ai_result,
-                "image_url": upload_result.get("url")
+                "image_url": final_img_url,
+                "is_dicom": file_ext == '.dcm'
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:

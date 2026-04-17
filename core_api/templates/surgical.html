@@ -5,110 +5,119 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Surgical AI Chamber - Maternal-Fetal System</title>
+  <link rel="icon" type="image/png" href="https://img.icons8.com/isometric/50/medical-heart.png">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+  <!-- Medical Imaging Headers: VTK, Cornerstone, ITK-Wasm -->
+  <script src="https://unpkg.com/vtk.js@28.6.0/dist/vtk.js"></script>
+  <script src="https://unpkg.com/cornerstone-core@2.3.0/dist/cornerstone.js"></script>
+  <script src="https://unpkg.com/cornerstone-wado-image-loader@3.3.2/dist/cornerstoneWADOImageLoader.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
 
-    /* ── Stage container ─────────────────────────────────────── */
+    /* ── Stage container: Unified Cinematic Bezel ──────────────── */
     #stage-container {
       display: flex; gap: 0;
-      border-radius: 2rem; overflow: hidden;
-      background: #07111e; height: 560px;
-      box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
-      border: 1.5px solid rgba(0,191,165,0.15);
+      border-radius: 2.5rem; overflow: hidden;
+      background: #000;
+      height: 620px;
+      box-shadow: 0 50px 100px -20px rgba(0,0,0,0.6);
+      border: 1px solid rgba(0,191,165,0.2);
+      position: relative;
     }
-    @media (max-width:640px) { #stage-container { height:320px; border-radius:1.25rem; flex-direction:column; } }
+    @media (max-width:1024px) { #stage-container { height: auto; flex-direction: column; } }
 
-    /* ── Left: 2-D scan panel ───────────────────────────────── */
+    /* ── Left: Intelligent Scan Terminal ───────────────────────── */
     #scan-panel {
-      flex: 1 1 65%; position: relative;
-      background: #030d18;
-      border-right: 1px solid rgba(0,191,165,0.12);
+      flex: 1 1 50%; position: relative;
+      background: #000;
+      border-right: 1px solid rgba(0,191,165,0.15);
       overflow: hidden;
-      display: flex; align-items: center; justify-content: center;
     }
     #scan-img {
-      display: block; max-width:100%; max-height:100%;
-      width:auto; height:auto; object-fit:contain;
-      position:relative; z-index:2;
+      display: block; width: 100%; height: 100%; object-fit: contain;
+      opacity: 0.9; filter: contrast(1.1) brightness(0.9);
+      position: absolute; top: 0; left: 0; z-index: 1;
     }
     #scan-placeholder {
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
-      color:rgba(0,191,165,0.3); gap:12px; pointer-events:none; z-index:2;
+      position:absolute; inset:0; display:flex; flex-direction:column; 
+      align-items:center; justify-content:center;
+      color:rgba(0,191,165,0.4); gap:16px; z-index:5;
     }
-    #scan-placeholder i { font-size:3rem; }
-    #scan-placeholder p { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; }
+    #scan-placeholder i { font-size:4rem; filter: drop-shadow(0 0 15px rgba(0,191,165,0.3)); }
     #scan-overlay {
       position:absolute; top:0; left:0; width:100%; height:100%;
-      pointer-events:none; z-index:3;
-    }
-    #hud-overlay {
-      position:absolute; left:14px; top:14px;
-      padding:6px 14px; background:rgba(0,191,165,0.9);
-      border-radius:2rem; color:#fff; font-weight:700; font-size:0.7rem;
-      pointer-events:none; z-index:20; border:1px solid rgba(255,255,255,0.2);
-      text-transform:uppercase; letter-spacing:1px;
-    }
-    #conf-badge {
-      position:absolute; right:14px; top:14px;
-      padding:6px 14px; background:rgba(10,61,98,0.9);
-      border-radius:2rem; color:#00bfa5; font-weight:700; font-size:0.7rem;
-      pointer-events:none; z-index:20; border:1px solid rgba(0,191,165,0.3); display:none;
-    }
-    #log-toggle-btn {
-      position:absolute; left:14px; bottom:14px;
-      padding:8px 16px; background:#00bfa5; color:#fff;
-      border-radius:2rem; font-weight:700; font-size:0.72rem;
-      box-shadow:0 6px 12px -2px rgba(0,191,165,0.35);
-      transition:all 0.25s; z-index:110;
+      pointer-events:none; z-index:10;
     }
 
-    /* ── Right: Three.js tool viewport ─────────────────────── */
+    /* ── Right: Digital Twin Viewport ─────────────────────────── */
     #tool-viewport {
-      flex: 0 0 35%; position:relative;
-      background:#07111e; overflow:hidden;
+      flex: 1 1 50%; position:relative;
+      background: radial-gradient(circle at center, #0a1729, #030d18);
+      overflow:hidden;
     }
     #tool-viewport canvas { display:block; width:100% !important; height:100% !important; }
-    #tool-label {
-      position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
-      background:rgba(0,191,165,0.15); border:1px solid rgba(0,191,165,0.3);
-      color:#00bfa5; font-size:0.6rem; font-weight:700;
-      text-transform:uppercase; letter-spacing:0.1em;
-      padding:5px 14px; border-radius:2rem; pointer-events:none; z-index:20;
-      white-space:nowrap;
+
+    /* ── Floating Clinical HUDs ────────────────────────────────── */
+    .hud-pill {
+      position: absolute; padding: 8px 18px;
+      background: rgba(10, 23, 41, 0.75); backdrop-filter: blur(12px);
+      border: 1px solid rgba(0, 191, 165, 0.3);
+      border-radius: 3rem; color: #fff; font-weight: 800; font-size: 0.65rem;
+      text-transform: uppercase; letter-spacing: 1.5px; z-index: 50;
     }
-    #tool-selector {
-      position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
-      display:flex; gap:6px; z-index:110;
+    #hud-overlay { left: 24px; top: 24px; border-left: 4px solid #00bfa5; }
+    #conf-badge { right: 24px; top: 24px; color: #00bfa5; display:none; }
+
+    /* ── Professional Tool Dock (Centered) ───────────────────── */
+    #tool-dock {
+      position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%);
+      display: flex; gap: 10px; z-index: 120;
+      padding: 8px; background: rgba(10, 23, 41, 0.8);
+      border-radius: 2rem; border: 1px solid rgba(0, 191, 165, 0.3);
+      backdrop-filter: blur(20px); box-shadow: 0 10px 40px rgba(0,0,0,0.4);
     }
-    .tool-btn {
-      display:flex; flex-direction:column; align-items:center; gap:4px;
-      padding:8px 12px;
-      background:rgba(10,23,41,0.85); border:1px solid rgba(0,191,165,0.3);
-      border-radius:1rem; color:#94a3b8;
-      font-size:0.6rem; font-weight:700; text-transform:uppercase;
-      letter-spacing:0.05em; cursor:pointer;
-      transition:all 0.25s; backdrop-filter:blur(8px);
+    .tool-tab {
+      width: 48px; height: 48px; border-radius: 1.25rem;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.05); color: rgba(0,191,165,0.6);
+      font-size: 1.25rem; cursor: pointer; transition: all 0.3s;
+      border: 1px solid transparent;
     }
-    .tool-btn i { font-size:1rem; }
-    .tool-btn:hover, .tool-btn.active {
-      background:rgba(0,191,165,0.2); border-color:#00bfa5; color:#00bfa5;
-      box-shadow:0 0 16px rgba(0,191,165,0.3);
+    .tool-tab:hover { background: rgba(0,191,165,0.15); color: #00bfa5; }
+    .tool-tab.active {
+      background: #00bfa5; color: #fff;
+      box-shadow: 0 0 25px rgba(0,191,165,0.5);
     }
 
-    /* ── Clinical log panel ─────────────────────────────────── */
-    #clinical-log {
-      position:absolute; right:20px; top:20px; bottom:80px; width:400px;
-      background:rgba(255,255,255,0.98); border-radius:1.5rem;
+    #log-toggle-btn {
+      position:absolute; left:24px; bottom:24px;
+      padding:10px 22px; background:rgba(10, 23, 41, 0.8); color:#00bfa5;
       border:1px solid rgba(0,191,165,0.3);
-      box-shadow:0 30px 60px -12px rgba(0,0,0,0.25);
-      padding:0; color:#475569; display:flex; flex-direction:column;
-      backdrop-filter:blur(16px);
-      transition:all 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
-      z-index:100; opacity:0; pointer-events:none; transform:translateX(40px);
+      border-radius:3rem; font-weight:800; font-size:0.65rem;
+      backdrop-filter: blur(10px); transition:all 0.3s; z-index:110;
+      text-transform: uppercase; letter-spacing: 1px;
+    }
+    #log-toggle-btn:hover { background: #00bfa5; color: #fff; }
+
+    /* ── Clinical Log Slide-out ──────────────────────────────── */
+    #clinical-log {
+      position:absolute; right:20px; top:20px; bottom:20px; width:360px;
+      background:rgba(7, 17, 30, 0.95); border-radius:2rem;
+      border:1px solid rgba(0,191,165,0.25);
+      box-shadow: -20px 0 60px rgba(0,0,0,0.5);
+      padding:0; color:#fff; display:flex; flex-direction:column;
+      backdrop-filter:blur(25px);
+      transition:all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index:200; opacity:0; pointer-events:none; transform:translateX(100%);
+    }
+    #clinical-log.open { opacity:1; pointer-events:auto; transform:translateX(0); }
+    .log-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .log-entry.clinical {
+      background:rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+      padding:12px; margin: 0 16px 10px 16px; border-radius:1rem;
     }
     @media (max-width:768px) {
       #clinical-log { left:10px; right:10px; bottom:10px; top:auto; width:auto; height:60vh;
@@ -190,26 +199,41 @@
           <div id="scan-panel">
             <div id="scan-placeholder">
               <i class="fa-solid fa-ultrasound"></i>
-              <p>Upload a scan to begin</p>
+              <div class="text-center">
+                <p class="font-black text-[11px] tracking-[0.2em] uppercase">Maternal AI</p>
+                <p class="text-[9px] font-bold opacity-60">Initializing Neural Diagnostic Link...</p>
+              </div>
             </div>
             <img id="scan-img" src="" alt="Ultrasound scan" style="display:none;">
             <canvas id="scan-overlay"></canvas>
-            <div id="hud-overlay">Awaiting scan...</div>
-            <div id="conf-badge"></div>
-            <button id="log-toggle-btn" onclick="toggleLog()"><i class="fa-solid fa-list-check mr-1"></i> Audit Log</button>
+            
+            <!-- Floating HUDs -->
+            <div id="hud-overlay" class="hud-pill">Link Established</div>
+            <div id="conf-badge" class="hud-pill"></div>
+            
+            <!-- Interactive Docks -->
+            <div id="tool-dock"></div>
+            <button id="log-toggle-btn" onclick="toggleLog()">
+               <i class="fa-solid fa-microscope mr-2 opacity-50"></i> Audit Log
+            </button>
+
+            <!-- Slide-out Log -->
             <div id="clinical-log">
-              <div class="p-4 border-b border-slate-100 flex justify-between items-center bg-slate-50 sticky top-0">
-                <span class="text-[10px] font-black uppercase text-slate-400 tracking-widest">Live Audit Path</span>
-                <button onclick="toggleLog()" class="text-slate-400 p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+              <div class="log-header flex justify-between items-center">
+                <div>
+                  <span class="text-[10px] font-black uppercase text-teal-500 tracking-widest block">Clinical Path</span>
+                  <span class="text-[9px] font-bold text-slate-500">Live AI Diagnostics</span>
+                </div>
+                <button onclick="toggleLog()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-all">
+                  <i class="fa-solid fa-xmark text-slate-400"></i>
+                </button>
               </div>
-              <div id="log-content" class="p-4 flex-1 overflow-y-auto"></div>
+              <div id="log-content" class="p-2 flex-1 overflow-y-auto"></div>
             </div>
           </div>
 
           <!-- 3-D TOOL VIEWPORT -->
-          <div id="tool-viewport">
-            <div id="tool-label">Select Instrument ↓</div>
-          </div>
+          <div id="tool-viewport"></div>
 
         </div>
 
@@ -391,7 +415,7 @@
         });
         const data = await res.json();
         if (data.success) {
-          if (data.image_url) window.updateScanHologram(data.image_url, []);
+          if (data.image_url) window.updateScanHologram(data.image_url, [], data.is_dicom, data.metadata);
           // Backend returns 'digital_twin', not 'analysis_results'
           var ai = data.digital_twin || data.analysis_results;
           if (ai && ai.success) {
@@ -399,6 +423,9 @@
             window.syncDigitalTwin(ai.anomalies);
           }
           addLog('Analysis complete. ' + (ai ? (ai.count || 0) + ' finding(s) detected.' : 'No findings.'), 'success');
+          
+          // Force archive refresh
+          loadHistory();
         } else {
           var errMsg = data.error || ('Server error ' + res.status);
           addLog('Upload error: ' + errMsg, 'error');
@@ -412,6 +439,9 @@
     function renderClinicalReport(result) {
       const container = document.getElementById('aiResults');
       if (!result || !result.anomalies) { container.innerHTML = ''; return; }
+      
+      // Save findings for persistence
+      localStorage.setItem('active_findings', JSON.stringify(result));
 
       const confColor = function(c) {
         if (c >= 0.8) return 'text-red-500';
@@ -431,45 +461,126 @@
       }).join('');
     }
 
-    // ── History ───────────────────────────────────────────────────────────
+    // ── Clinical History & Persistence ───────────────────────────────────
+    async function saveVitals() {
+      const data = {
+        maternal_bp: document.getElementById('bp').value,
+        maternal_hr: document.getElementById('mhr').value,
+        fetal_hr:    document.getElementById('fhr').value,
+        spo2:        document.getElementById('spo2').value
+      };
+      const btn = document.querySelector('.vitals-btn') || document.querySelector('button[onclick="saveVitals()"]');
+      if (!btn) return;
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin mr-2"></i> Syncing...';
+      
+      try {
+        const res = await fetch('/api/v1/vitals/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+          body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.success || !result.error) {
+           addLog('Patient Vitals synchronized to clinical record.', 'success');
+           btn.innerHTML = '<i class="fa-solid fa-check mr-2"></i> Synced';
+           setTimeout(() => { btn.innerHTML = originalText; }, 2000);
+        } else {
+           addLog('Vitals sync failed: ' + (result.error || 'Check network'), 'error');
+           btn.innerHTML = originalText;
+        }
+      } catch (err) {
+        addLog('Vitals service unreachable.', 'error');
+        btn.innerHTML = originalText;
+      }
+    }
     async function loadHistory() {
       const list = document.getElementById('historyList');
+      const container = document.getElementById('history-container') || list;
+      if (!container) return;
+      
       try {
         const res  = await fetch('/api/v1/history/');
         const data = await res.json();
-        if (data.history && data.history.length > 0) {
-          list.innerHTML = '';
-          data.history.forEach(function(item) {
+        // Backend returns { "history": [...] }
+        const records = data.history || data.records || (Array.isArray(data) ? data : []);
+        
+        if (records.length > 0) {
+          container.innerHTML = '';
+          records.forEach(function(item) {
             const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent';
+            const isDic = item.processed_as === 'DICOM';
             const div  = document.createElement('div');
-            div.className = 'p-3 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-[#00bfa5] hover:bg-teal-50/30 transition-all flex items-center justify-between group';
-            div.onclick   = function() { inspectHistoryItem(item); };
-            div.innerHTML = '<div class="flex items-center gap-3">'
-              + '<div class="w-9 h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#00bfa5] transition-all"><i class="fa-solid fa-microscope text-xs"></i></div>'
-              + '<div><div class="text-[10px] font-black text-slate-700 truncate max-w-[140px]">' + (item.filename || 'Diagnostic Record') + '</div>'
-              + '<div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">' + date + ' &bull; ' + (item.processed_as || 'SCAN') + '</div></div></div>'
-              + '<i class="fa-solid fa-arrow-right-long text-[10px] text-slate-300 group-hover:text-[#00bfa5] group-hover:translate-x-1 transition-all"></i>';
-            list.appendChild(div);
+            div.className = 'history-item flex items-center gap-3 p-3 rounded-xl border border-slate-50 hover:border-teal-100 hover:bg-teal-50/30 cursor-pointer transition-all mb-2';
+            div.onclick   = function() { 
+              inspectHistoryItem(item); 
+              localStorage.removeItem('active_scan');
+              localStorage.removeItem('active_findings');
+            };
+            
+            div.innerHTML = `
+              <div class="w-10 h-10 rounded-lg bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200">
+                ${isDic ? '<i class="fa-solid fa-dna text-teal-600"></i>' : `<img src="${item.image_url}" class="w-full h-full object-cover">`}
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-[10px] font-black truncate">${item.filename || 'Archive'}</div>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-[8px] font-bold px-1.5 py-0.5 rounded ${isDic ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'}">${item.processed_as || 'IMAGE'}</span>
+                  <span class="text-[9px] text-slate-400 font-medium">${date}</span>
+                </div>
+              </div>
+            `;
+            container.appendChild(div);
           });
         } else {
-          list.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-box-open text-slate-200 text-3xl mb-3"></i>'
-            + '<p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No Analysis History Found</p></div>';
+          container.innerHTML = '<div class="text-[10px] text-slate-400 p-4 text-center italic">No prior archives found.</div>';
         }
       } catch(e) {
-        list.innerHTML = '<div class="text-center py-6 text-[10px] text-red-400 font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i>Data Sync Error</div>';
+        container.innerHTML = '<div class="text-[10px] text-red-400 p-4 text-center italic">Archive sync error.</div>';
       }
     }
 
     function inspectHistoryItem(item) {
-      addLog('Revisiting analysis for: ' + item.filename, 'info');
-      window.updateScanHologram(item.image_url, []);
-      if (item.analysis_results && item.analysis_results.success) {
-        renderClinicalReport(item.analysis_results);
-        window.syncDigitalTwin(item.analysis_results.anomalies);
+      addLog('Restoring clinical analysis for: ' + item.filename, 'info');
+      var isDic = item.processed_as === 'DICOM';
+      window.updateScanHologram(item.image_url, [], isDic, item.dicom_metadata || {});
+      var ai = item.analysis_results;
+      if (ai && ai.success) {
+        renderClinicalReport(ai);
+        if (ai.anomalies) window.syncDigitalTwin(ai.anomalies);
       }
     }
 
-    document.addEventListener('DOMContentLoaded', loadHistory);
+    function resetOperativeSession() {
+      localStorage.removeItem('active_scan');
+      localStorage.removeItem('active_findings');
+      window.location.reload();
+    }
+
+    function checkPersistentState() {
+      const scan = localStorage.getItem('active_scan');
+      const findings = localStorage.getItem('active_findings');
+      
+      if (scan) {
+        try {
+          const s = JSON.parse(scan);
+          window.updateScanHologram(s.url, s.detections, s.isDicom, s.meta);
+          addLog('Operative state restored from clinical cache.', 'info');
+        } catch(e) {}
+      }
+      if (findings) {
+        try {
+          const f = JSON.parse(findings);
+          renderClinicalReport(f);
+          if (f.anomalies) window.syncDigitalTwin(f.anomalies);
+        } catch(e) {}
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      loadHistory();
+      checkPersistentState();
+    });
 
     // ════════════════════════════════════════════════════════════════════
     // 2-D INTELLIGENT SCAN OVERLAY ENGINE
@@ -513,19 +624,106 @@
       return { x: ir.x + det.x * sx, y: ir.y + det.y * sy, w: det.w * sx, h: det.h * sy };
     }
 
+    // ════════════════════════════════════════════════════════════════════
+    // CORNERSTONE DICOM ENGINE
+    // ════════════════════════════════════════════════════════════════════
+    function initCornerstone() {
+      if (typeof cornerstone === 'undefined') return;
+      var element = document.getElementById('scan-panel');
+      cornerstone.enable(element);
+
+      // Custom Image Loader for our JSON Pixel Data
+      cornerstone.registerImageLoader('maternal', function(imageId) {
+        var data = window.currentDicomData;
+        if (!data || !data.pixels) return null;
+
+        var width  = data.width;
+        var height = data.height;
+
+        function getPixelData() {
+          var pixelData = new Uint16Array(width * height);
+          var flat = data.pixels.flat();
+          for (var i = 0; i < flat.length; i++) {
+            pixelData[i] = flat[i] * 255; // Normalize back for CS
+          }
+          return pixelData;
+        }
+
+        var image = {
+          imageId: imageId,
+          minPixelValue: 0,
+          maxPixelValue: 255,
+          slope: 1.0,
+          intercept: 0,
+          windowCenter: 127,
+          windowWidth: 256,
+          render: cornerstone.renderGrayscaleImage,
+          getPixelData: getPixelData,
+          rows: height,
+          columns: width,
+          height: height,
+          width: width,
+          color: false,
+          columnPixelSpacing: 1,
+          rowPixelSpacing: 1,
+          sizeInBytes: width * height * 2
+        };
+
+        return {
+          promise: new Promise(function(resolve) { resolve(image); }),
+          cancelFn: undefined
+        };
+      });
+    }
+
     function _draw2D(now) {
       requestAnimationFrame(_draw2D);
       _syncOverlaySize();
       var cw = scanOverlay.width, ch = scanOverlay.height;
       scanCtx.clearRect(0, 0, cw, ch);
-      if (!scanImg.src || scanImg.style.display === 'none') return;
+      
+      // If no scan, show placeholder
+      if (scanImg.style.display === 'none' && !window.isDicomActive) {
+        scanPH.style.display = 'flex';
+        return;
+      }
+      scanPH.style.display = 'none';
+
       var ir = _imgRect();
       var t  = now * 0.001;
 
-      // 1. Probe noise
+      // ── 1. Advanced Pixel Segmentation Mask ───────────────────
+      if (window.isDicomActive && window.currentMetadata && window.currentMetadata.mask) {
+        var mask = window.currentMetadata.mask;
+        var mH   = mask.length, mW = mask[0].length;
+        var step = Math.max(1, Math.floor(mW / 120)); // High-res multi-class
+        
+        for (var y = 0; y < mH; y += step) {
+          for (var x = 0; x < mW; x += step) {
+            var val = mask[y][x];
+            if (val === 0) continue;
+            
+            // Multi-class colors
+            if (val === 1) scanCtx.fillStyle = 'rgba(0,191,165,0.25)'; // Tissue (Teal)
+            if (val === 2) scanCtx.fillStyle = 'rgba(245,158,11,0.4)';  // Fluid (Amber)
+            if (val === 3) scanCtx.fillStyle = 'rgba(239,68,68,0.55)';  // Anomaly (Red)
+            
+            var cx = ir.x + (x / mW) * ir.w;
+            var cy = ir.y + (y / mH) * ir.h;
+            scanCtx.fillRect(cx, cy, (step/mW)*ir.w + 1, (step/mH)*ir.h + 1);
+          }
+        }
+        
+        // Highlight Label
+        scanCtx.font = 'bold 9px Inter,sans-serif';
+        scanCtx.fillStyle = '#00bfa5';
+        scanCtx.fillText("MULTI-CLASS STRUCTURAL SEGMENTATION", ir.x + 10, ir.y + ir.h - 15);
+      }
+
+      // 2. Probe noise
       noiseTimer += 0.016;
       if (noiseTimer > 0.07) { noiseTimer = 0; noiseAlpha = 0.01 + Math.random() * 0.018; }
-      for (var n = 0; n < 3; n++) {
+      for (var n = 0; n < 2; n++) {
         var ny = ir.y + Math.random() * ir.h;
         scanCtx.beginPath();
         scanCtx.moveTo(ir.x, ny); scanCtx.lineTo(ir.x + ir.w, ny);
@@ -533,41 +731,19 @@
         scanCtx.lineWidth = 0.4; scanCtx.stroke();
       }
 
-      // 2. Scan-line sweep — slows near detections
+      // 3. Scan-line sweep
       var spd = ch * 0.0025;
-      for (var si = 0; si < scanDetections.length; si++) {
-        var sb = _toCanvas(scanDetections[si], ir);
-        if (Math.abs(scanLineY - (sb.y + sb.h / 2)) < sb.h * 0.8) spd *= 0.2;
-      }
       scanLineY += scanLineDir * spd;
       if (scanLineY > ir.y + ir.h) { scanLineY = ir.y + ir.h; scanLineDir = -1; }
       if (scanLineY < ir.y)         { scanLineY = ir.y;        scanLineDir =  1; }
       var progY    = (scanLineY - ir.y) / ir.h;
       var edgeFade = Math.max(0, Math.min(0.65, 1 - Math.abs(progY - 0.5) * 1.5));
-      var grad = scanCtx.createLinearGradient(ir.x, scanLineY - 7, ir.x, scanLineY + 7);
-      grad.addColorStop(0,   'rgba(0,255,200,0)');
-      grad.addColorStop(0.5, 'rgba(0,255,200,' + edgeFade + ')');
-      grad.addColorStop(1,   'rgba(0,255,200,0)');
-      scanCtx.fillStyle = grad;
-      scanCtx.fillRect(ir.x, scanLineY - 7, ir.w, 14);
       scanCtx.beginPath();
       scanCtx.moveTo(ir.x, scanLineY); scanCtx.lineTo(ir.x + ir.w, scanLineY);
       scanCtx.strokeStyle = 'rgba(0,255,200,' + (edgeFade * 0.85) + ')';
       scanCtx.lineWidth = 1.2; scanCtx.stroke();
 
-      // 3. Corner frame
-      var arm = 18;
-      var fc  = [[ir.x,ir.y,1,1],[ir.x+ir.w,ir.y,-1,1],[ir.x+ir.w,ir.y+ir.h,-1,-1],[ir.x,ir.y+ir.h,1,-1]];
-      for (var fi = 0; fi < fc.length; fi++) {
-        var fc2 = fc[fi];
-        scanCtx.beginPath();
-        scanCtx.moveTo(fc2[0]+fc2[2]*arm, fc2[1]);
-        scanCtx.lineTo(fc2[0], fc2[1]);
-        scanCtx.lineTo(fc2[0], fc2[1]+fc2[3]*arm);
-        scanCtx.strokeStyle = 'rgba(0,191,165,0.7)'; scanCtx.lineWidth = 2; scanCtx.stroke();
-      }
-
-      // 4. Detections — pixel-accurate overlay
+      // 4. Detections — pixel-accurate overlay (for standard images)
       if (hasLock) lockTimer = Math.min(lockTimer + 0.04, 1);
       for (var di = 0; di < scanDetections.length; di++) {
         var det   = scanDetections[di];
@@ -578,62 +754,135 @@
         var pw = b.w*pulse,               ph = b.h*pulse;
         var cx = px + pw/2,               cy = py + ph/2;
 
-        // Corner brackets
-        var cs  = Math.min(pw,ph)*0.24;
-        var bcs = [[px,py,1,1],[px+pw,py,-1,1],[px+pw,py+ph,-1,-1],[px,py+ph,1,-1]];
-        scanCtx.strokeStyle = _confColor(conf, 0.9); scanCtx.lineWidth = 2;
-        for (var bi = 0; bi < bcs.length; bi++) {
-          var bc = bcs[bi];
+        // ── Clinical Data-Brackets ─────────────────────────────
+        scanCtx.strokeStyle = _confColor(conf, 0.85); scanCtx.lineWidth = 1.5;
+        var cs = Math.min(pw, ph) * 0.18;
+        [[px,py,1,1],[px+pw,py,-1,1],[px+pw,py+ph,-1,-1],[px,py+ph,1,-1]].forEach(function(bc) {
           scanCtx.beginPath();
-          scanCtx.moveTo(bc[0]+bc[2]*cs,bc[1]); scanCtx.lineTo(bc[0],bc[1]); scanCtx.lineTo(bc[0],bc[1]+bc[3]*cs);
+          scanCtx.moveTo(bc[0]+bc[2]*cs, bc[1]);
+          scanCtx.lineTo(bc[0], bc[1]);
+          scanCtx.lineTo(bc[0], bc[1]+bc[3]*cs);
           scanCtx.stroke();
-        }
+        });
 
-        // Target-lock crosshair
-        var off = Math.min(pw,ph)*0.55*(1 - lockTimer*0.7);
-        var cl  = 10;
-        scanCtx.strokeStyle = _confColor(conf, 0.5 + lockTimer*0.4); scanCtx.lineWidth = 1.2;
-        var lk = [[cx-off,cy,cx-off-cl,cy],[cx+off,cy,cx+off+cl,cy],
-                   [cx,cy-off,cx,cy-off-cl],[cx,cy+off,cx,cy+off+cl]];
-        for (var li = 0; li < lk.length; li++) {
-          scanCtx.beginPath(); scanCtx.moveTo(lk[li][0],lk[li][1]); scanCtx.lineTo(lk[li][2],lk[li][3]); scanCtx.stroke();
-        }
-
-        // Pulsing ring
-        var ringR = Math.min(pw,ph)*0.35*pulse;
-        var ringA = 0.12 + Math.abs(Math.sin(t*2.8+di*0.8))*0.3;
-        scanCtx.beginPath(); scanCtx.arc(cx, cy, ringR, 0, Math.PI*2);
-        scanCtx.strokeStyle = _confColor(conf, ringA); scanCtx.lineWidth = 1.5; scanCtx.stroke();
-
-        // Label + confidence bar
-        var confPct = Math.round(conf*100);
-        var tag = (det.label || 'Finding') + '  ' + confPct + '%';
-        scanCtx.font = 'bold 10px Inter,sans-serif';
-        var tw  = scanCtx.measureText(tag).width;
-        var tgW = tw+12, tgH = 16;
-        var tgX = Math.max(ir.x, Math.min(ir.x+ir.w-tgW, px));
-        var tgY = py > ir.y+22 ? py-4 : py+ph+16;
-        scanCtx.fillStyle = _confColor(conf, 0.88);
-        scanCtx.fillRect(tgX, tgY-tgH, tgW, tgH);
-        scanCtx.fillStyle = 'rgba(255,255,255,0.2)'; scanCtx.fillRect(tgX, tgY, tgW, 3);
-        scanCtx.fillStyle = 'rgba(255,255,255,0.7)'; scanCtx.fillRect(tgX, tgY, Math.round(tgW*conf), 3);
-        scanCtx.fillStyle = '#fff'; scanCtx.fillText(tag, tgX+6, tgY-4);
+        // ── Floating Insight Label ────────────────────────────
+        var tag = (det.label || 'Finding').toUpperCase() + ' // ' + Math.round(conf*100) + '%';
+        scanCtx.font = '800 9px Inter,sans-serif';
+        var tw = scanCtx.measureText(tag).width;
+        
+        // Glass Tag
+        scanCtx.fillStyle = 'rgba(10,23,41,0.85)';
+        scanCtx.roundRect ? scanCtx.roundRect(px, py-18, tw+12, 14, 4) : scanCtx.fillRect(px, py-18, tw+12, 14);
+        scanCtx.fill();
+        
+        scanCtx.fillStyle = _confColor(conf, 1);
+        scanCtx.fillText(tag, px+6, py-8);
       }
     }
     _draw2D(0);
+    initCornerstone();
 
-    window.updateScanHologram = function(url, detections) {
+    window.updateScanHologram = function(url, detections, isDicom, meta) {
       detections = detections || [];
+      window.currentMetadata = meta || {};
+      window.isDicomActive   = !!isDicom;
       scanDetections = detections; hasLock = false; lockTimer = 0;
-      scanImg.onload = function() {
+      
+      // Persistence Save
+      localStorage.setItem('active_scan', JSON.stringify({ url, detections, isDicom, meta }));
+
+      var panel = document.getElementById('scan-panel');
+
+      if (isDicom && meta && meta.pixels) {
+        // --- DICOM PATH: Cornerstone ---
+        window.currentDicomData = meta;
+        scanImg.style.display = 'none';
         scanPH.style.display  = 'none';
-        scanImg.style.display = 'block';
-        hudEl.textContent      = 'Scan Active - Probe Sweep';
-        hudEl.style.background = 'rgba(0,191,165,0.9)';
-        _syncOverlaySize();
-        addLog('Scan loaded at native aspect ratio. Probe sweep active.', 'success');
-      };
-      scanImg.src = url; scanImg.crossOrigin = 'anonymous';
+        
+        if (!panel.dataset.cornerstoneEnabled) {
+          cornerstone.enable(panel);
+          panel.dataset.cornerstoneEnabled = "true";
+        }
+        
+        cornerstone.loadImage('maternal:image').then(function(image) {
+          cornerstone.displayImage(panel, image);
+          addLog('Cornerstone DICOM Viewport Active. Rendering raw pixel stream.', 'success');
+          
+          // Display Clinical AI Insights
+          if (meta.insights) {
+             meta.insights.forEach(function(ins) {
+                addLog('AI Insight [' + ins.category + ']: ' + ins.detail + ' (Conf: ' + Math.round(ins.conf*100) + '%)', 'info');
+             });
+          }
+        });
+        
+        hudEl.textContent      = 'DICOM SEGMENTATION ACTIVE';
+        hudEl.style.background = 'rgba(79,70,229,0.9)';
+      } else {
+        // --- IMAGE PATH: Standard Canvas ---
+        window.currentDicomData = null;
+        if (panel.dataset.cornerstoneEnabled) {
+          // Temporarily hide CS if enabled (or better, clear it)
+        }
+        
+        scanImg.onload = function() {
+          scanPH.style.display  = 'none';
+          scanImg.style.display = 'block';
+          hudEl.textContent      = 'Scan Active - Probe Sweep';
+          hudEl.style.background = 'rgba(0,191,165,0.9)';
+          _syncOverlaySize();
+          addLog('Visual scan synced. Anomaly detection active.', 'success');
+        };
+        scanImg.src = url; scanImg.crossOrigin = 'anonymous';
+      }
+
+      // 2. Update 3D Womb Internal Plane (Phase 3: Volumetric Reconstructor)
+      if (scanPlane3D) {
+        var loader = new THREE.TextureLoader();
+        loader.load(url, function(tex) {
+           // Standard 2D slice mapping
+           scanPlane3D.material.map = tex;
+           scanPlane3D.material.needsUpdate = true;
+           scanPlane3D.visible = true;
+           
+           if (isDicom && meta.pixels) {
+             // ── Phase 3: Volumetric Stack Generation ───────────
+             // We clear old layers and build a "Thick Voxel Stack"
+             if (window.voxelStack) {
+               window.voxelStack.forEach(function(l) { world.remove(l); });
+             }
+             window.voxelStack = [];
+             
+             // Create 5 layers of "Atmospheric Depth" to simulate volume
+             for (var i = -2; i <= 2; i++) {
+               if (i === 0) continue; // Skip main plane
+               var layer = scanPlane3D.clone();
+               layer.position.z = 5 + (i * 1.5); // Spread layers
+               layer.material = scanPlane3D.material.clone();
+               layer.material.opacity = 0.15 - (Math.abs(i) * 0.03); // Fading depth
+               world.add(layer);
+               window.voxelStack.push(layer);
+             }
+             
+             // X-Ray Womb Aesthetic
+             if (wombShell) {
+               wombShell.material.color.setHex(0x4f46e5); // Indigo Clinical
+               wombShell.material.opacity = 0.08;
+             }
+             addLog('Volumetric Reconstruction: Success. Voxel stack depth: 7.5mm.', 'success');
+           } else {
+             // Reset to 2D
+             if (window.voxelStack) {
+               window.voxelStack.forEach(function(l) { world.remove(l); });
+               window.voxelStack = null;
+             }
+             if (wombShell) {
+               wombShell.material.color.setHex(0x00bfa5);
+               wombShell.material.opacity = 0.15;
+             }
+           }
+        });
+      }
     };
 
     window.syncDigitalTwin = function(anom) {
@@ -666,11 +915,11 @@
       addLog(n + ' marker' + (n!==1?'s':'') + ' locked. Top: ' + top.label + ' (' + Math.round(top.conf*100) + '%)', 'success');
     };
 
-    // ════════════════════════════════════════════════════════════════════
-    // THREE.JS TOOL VIEWPORT (right panel — instruments only)
-    // ════════════════════════════════════════════════════════════════════
+    // ── 3D Viewport engine ──────────────────────────────────────────────
     var scene, camera, renderer, world;
     var activeTool     = null;
+    var scanPlane3D    = null; // The plane inside the womb
+    var wombShell      = null;
     var activeToolName = 'trocar';
     var isToolDragging = false;
     var prevX = 0, prevY = 0;
@@ -678,31 +927,41 @@
     function initToolViewport() {
       var vp = document.getElementById('tool-viewport');
       if (!vp) return;
+      
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x07111e);
       camera = new THREE.PerspectiveCamera(38, vp.clientWidth / vp.clientHeight, 1, 2000);
-      camera.position.set(0, 15, 170);
-      renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
+      camera.position.set(0, 40, 180);
+      
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(vp.clientWidth, vp.clientHeight);
-      Object.assign(renderer.domElement.style, { position:'absolute', top:'0', left:'0' });
       vp.appendChild(renderer.domElement);
+      
       world = new THREE.Group();
       scene.add(world);
 
-      // Grid
-      var grid = new THREE.GridHelper(300, 30, 0x00bfa5, 0x0d2136);
-      grid.position.y = -90; grid.material.opacity = 0.12; grid.material.transparent = true;
+      // Resize Logic (Fixes black output)
+      const resize = () => {
+        const w = vp.clientWidth, h = vp.clientHeight;
+        if (w === 0 || h === 0) return;
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+        renderer.setSize(w, h);
+      };
+      new ResizeObserver(resize).observe(vp);
+      setTimeout(resize, 100);
+
+      var grid = new THREE.GridHelper(400, 40, 0x00bfa5, 0x0d2136);
+      grid.position.y = -100; grid.material.opacity = 0.08; grid.material.transparent = true;
       world.add(grid);
 
-      // Lighting
-      scene.add(new THREE.AmbientLight(0xc8dcf0, 0.55));
-      var key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(80, 160, 120); scene.add(key);
-      var front = new THREE.PointLight(0x00bfa5, 3.5, 500); front.position.set(0, 60, 120); scene.add(front);
-      var rim   = new THREE.PointLight(0x00bfa5, 3.5, 500); rim.position.set(-60, 80, 80);  scene.add(rim);
-      var fill  = new THREE.PointLight(0x0a3d62, 2.0, 400); fill.position.set(60, -40, 80); scene.add(fill);
+      scene.add(new THREE.AmbientLight(0xc8dcf0, 0.4));
+      var key = new THREE.DirectionalLight(0xffffff, 1.0); key.position.set(80, 160, 120); scene.add(key);
+      var front = new THREE.PointLight(0x00bfa5, 2.5, 500); front.position.set(0, 60, 120); scene.add(front);
 
-      buildToolSelector();
+      buildWomb();
+      buildToolDock();
       spawnTool('trocar');
       animateTool();
 
@@ -712,25 +971,81 @@
       });
       window.addEventListener('mousemove', function(e) {
         if (isToolDragging && activeTool) {
-          activeTool.position.x += (e.clientX - prevX) * 0.18;
-          activeTool.position.y -= (e.clientY - prevY) * 0.18;
-          activeTool.position.x  = Math.max(-40, Math.min(40, activeTool.position.x));
-          activeTool.position.y  = Math.max(-40, Math.min(40, activeTool.position.y));
+          activeTool.position.x += (e.clientX - prevX) * 0.22;
+          activeTool.position.y -= (e.clientY - prevY) * 0.22;
+          activeTool.position.z  = Math.min(60, activeTool.position.z);
           prevX = e.clientX; prevY = e.clientY;
         }
       });
       window.addEventListener('mouseup', function() { isToolDragging = false; });
     }
 
+    function buildWomb() {
+      var anatomy = new THREE.Group();
+      
+      // 1. Holographic Uterine Shell
+      var geo = new THREE.SphereGeometry(65, 32, 32);
+      geo.scale(1, 1.3, 0.85); // Anatomical pear shape
+      
+      var mat = new THREE.MeshStandardMaterial({
+        color: 0x00bfa5,
+        transparent: true,
+        opacity: 0.15,
+        wireframe: false,
+        metalness: 0.2,
+        roughness: 0.1,
+        side: THREE.BackSide, // Visible only when looking "in"
+      });
+      
+      wombShell = new THREE.Mesh(geo, mat);
+      anatomy.add(wombShell);
+
+      // Inner rim glow shell
+      var rimGeo = geo.clone();
+      rimGeo.scale(1.05, 1.05, 1.05);
+      var rimMat = new THREE.MeshBasicMaterial({
+        color: 0x00bfa5,
+        transparent: true,
+        opacity: 0.05,
+        wireframe: true
+      });
+      anatomy.add(new THREE.Mesh(rimGeo, rimMat));
+
+      // 2. Internal Scan Plane (Where the 2D scan goes 3D)
+      var planeGeo = new THREE.PlaneGeometry(80, 60);
+      var planeMat = new THREE.MeshBasicMaterial({
+        color: 0xffffff,
+        side: THREE.DoubleSide,
+        transparent: true,
+        opacity: 0.9,
+        map: null // Loaded later
+      });
+      scanPlane3D = new THREE.Mesh(planeGeo, planeMat);
+      scanPlane3D.position.z = 5;
+      scanPlane3D.visible = false; 
+      anatomy.add(scanPlane3D);
+
+      world.add(anatomy);
+    }
+
     function animateTool() {
       requestAnimationFrame(animateTool);
       var now = Date.now() * 0.001;
+      
       if (activeTool) {
-        activeTool.position.y = 8 + Math.sin(now * 1.5) * 4;
+        activeTool.position.y = 12 + Math.sin(now * 1.5) * 6;
         activeTool.rotation.z = Math.sin(now * 0.45) * 0.04;
         activeTool.rotation.y = Math.sin(now * 0.28) * 0.05;
+        // Point the tool toward the womb centre for better "operative" feel
+        activeTool.lookAt(0, 0, 0);
       }
-      if (world) world.rotation.y = Math.sin(now * 0.09) * 0.07;
+      
+      if (wombShell) {
+        wombShell.material.opacity = 0.12 + Math.sin(now * 2) * 0.03; // Gentle organic pulse
+      }
+
+      if (world) world.rotation.y += 0.003; // Subtle anatomical rotation
+
       renderer.render(scene, camera);
     }
 
@@ -794,33 +1109,39 @@
       activeToolName = name;
       activeTool     = TOOLS[name].build();
       scene.add(activeTool);
-      var lbl = document.getElementById('tool-label');
-      if (lbl) lbl.textContent = TOOLS[name].label;
-      addLog('Instrument loaded: ' + TOOLS[name].label, 'info');
-      document.querySelectorAll('.tool-btn').forEach(function(b) {
+      
+      addLog('Instrument Synced: ' + TOOLS[name].label, 'info');
+      document.querySelectorAll('.tool-tab').forEach(function(b) {
         b.classList.toggle('active', b.dataset.tool === name);
       });
     }
 
-    function buildToolSelector() {
-      var existing = document.getElementById('tool-selector');
-      if (existing) existing.remove();
-      var vp  = document.getElementById('tool-viewport');
-      var sel = document.createElement('div');
-      sel.id = 'tool-selector';
+    function buildToolDock() {
+      var dock = document.getElementById('tool-dock');
+      if (!dock) return;
+      dock.innerHTML = '';
       Object.keys(TOOLS).forEach(function(key) {
         var cfg = TOOLS[key];
         var btn = document.createElement('button');
-        btn.className    = 'tool-btn';
+        btn.className    = 'tool-tab';
         btn.dataset.tool = key;
-        btn.innerHTML    = '<i class="fa-solid ' + cfg.icon + '"></i>' + cfg.label;
+        btn.innerHTML    = '<i class="fa-solid ' + cfg.icon + '"></i>';
+        btn.title        = cfg.label;
         btn.onclick      = function() { spawnTool(key); };
-        sel.appendChild(btn);
+        dock.appendChild(btn);
       });
-      vp.appendChild(sel);
+
+      // Add Reset Session Button at the end of dock
+      var resetBtn = document.createElement('button');
+      resetBtn.className = 'tool-tab text-red-400 hover:bg-red-500/20';
+      resetBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
+      resetBtn.title     = 'Reset Terminal Session';
+      resetBtn.onclick   = resetOperativeSession;
+      dock.appendChild(resetBtn);
     }
 
     initToolViewport();
+    buildToolDock();
   </script>
 </body>
 </html>
