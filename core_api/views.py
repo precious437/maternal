@@ -38,9 +38,9 @@ class FileUploadView(APIView):
             file_ext = os.path.splitext(original_filename)[1].lower()
             unique_filename = f"{uuid.uuid4()}{file_ext}"
             
-            # 1. Prepare temp upload path
-            temp_dir = os.path.join(settings.BASE_DIR, 'temp_uploads')
-            os.makedirs(temp_dir, exist_ok=True)
+            # 1. Prepare temp upload path using system temp (crucial for Vercel/Serverless)
+            import tempfile
+            temp_dir = tempfile.gettempdir()
             temp_path = os.path.join(temp_dir, unique_filename)
             
             # Default metadata for non-DICOM

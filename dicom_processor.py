@@ -12,9 +12,14 @@ class DICOMProcessor:
     """Process DICOM files from medical imaging devices"""
     
     def __init__(self):
-        self.dicom_folder = 'dicom_files'
+        import tempfile
+        self.dicom_folder = os.path.join(tempfile.gettempdir(), 'dicom_files')
         if not os.path.exists(self.dicom_folder):
-            os.makedirs(self.dicom_folder)
+            try:
+                os.makedirs(self.dicom_folder, exist_ok=True)
+            except Exception:
+                # Fallback to just temp dir if subdir creation fails
+                self.dicom_folder = tempfile.gettempdir()
     
     def process_dicom_file(self, file_path):
         """Extract metadata from DICOM file"""
