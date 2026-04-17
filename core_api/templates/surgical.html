@@ -9,220 +9,165 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'); 
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', sans-serif; }
-    
-    /* â”€â”€â”€ Stage: Side-by-side scan + tool panels â”€â”€â”€â”€â”€â”€â”€ */
+
+    /* ── Stage container ─────────────────────────────────────── */
     #stage-container {
       display: flex; gap: 0;
       border-radius: 2rem; overflow: hidden;
-      background: #07111e;
-      height: 560px;
+      background: #07111e; height: 560px;
       box-shadow: 0 40px 100px -20px rgba(0,0,0,0.5);
       border: 1.5px solid rgba(0,191,165,0.15);
     }
-    @media (max-width: 640px) { #stage-container { height: 320px; border-radius: 1.25rem; flex-direction: column; } }
+    @media (max-width:640px) { #stage-container { height:320px; border-radius:1.25rem; flex-direction:column; } }
 
-    /* Left: 2D flat scan display */
+    /* ── Left: 2-D scan panel ───────────────────────────────── */
     #scan-panel {
-      flex: 1 1 65%;
-      position: relative;
+      flex: 1 1 65%; position: relative;
       background: #030d18;
       border-right: 1px solid rgba(0,191,165,0.12);
       overflow: hidden;
       display: flex; align-items: center; justify-content: center;
     }
     #scan-img {
-      display: block;
-      max-width: 100%; max-height: 100%;
-      width: auto; height: auto;
-      object-fit: contain;
-      position: relative; z-index: 2;
-      image-rendering: auto;
+      display: block; max-width:100%; max-height:100%;
+      width:auto; height:auto; object-fit:contain;
+      position:relative; z-index:2;
     }
     #scan-placeholder {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      color: rgba(0,191,165,0.3); gap: 12px; pointer-events: none; z-index: 2;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      color:rgba(0,191,165,0.3); gap:12px; pointer-events:none; z-index:2;
     }
-    #scan-placeholder i  { font-size: 3rem; }
-    #scan-placeholder p  { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; }
-    /* The canvas that overlays the image for scan-line + annotations  */
+    #scan-placeholder i { font-size:3rem; }
+    #scan-placeholder p { font-size:0.7rem; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; }
     #scan-overlay {
-      position: absolute; top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none; z-index: 3;
+      position:absolute; top:0; left:0; width:100%; height:100%;
+      pointer-events:none; z-index:3;
     }
-    /* HUD badge inside scan panel */
     #hud-overlay {
-      position: absolute; left: 14px; top: 14px;
-      padding: 6px 14px; background: rgba(0,191,165,0.9);
-      border-radius: 2rem; color: white; font-weight: 700; font-size: 0.7rem;
-      pointer-events: none; z-index: 20; border: 1px solid rgba(255,255,255,0.2);
-      text-transform: uppercase; letter-spacing: 1px;
+      position:absolute; left:14px; top:14px;
+      padding:6px 14px; background:rgba(0,191,165,0.9);
+      border-radius:2rem; color:#fff; font-weight:700; font-size:0.7rem;
+      pointer-events:none; z-index:20; border:1px solid rgba(255,255,255,0.2);
+      text-transform:uppercase; letter-spacing:1px;
     }
-    /* Confidence badge */
     #conf-badge {
-      position: absolute; right: 14px; top: 14px;
-      padding: 6px 14px; background: rgba(10,61,98,0.9);
-      border-radius: 2rem; color: #00bfa5; font-weight: 700; font-size: 0.7rem;
-      pointer-events: none; z-index: 20; border: 1px solid rgba(0,191,165,0.3);
-      display: none;
+      position:absolute; right:14px; top:14px;
+      padding:6px 14px; background:rgba(10,61,98,0.9);
+      border-radius:2rem; color:#00bfa5; font-weight:700; font-size:0.7rem;
+      pointer-events:none; z-index:20; border:1px solid rgba(0,191,165,0.3); display:none;
     }
-
-    /* Right: Three.js surgical tool viewport */
-    #tool-viewport {
-      flex: 0 0 35%;
-      position: relative;
-      background: #07111e;
-      overflow: hidden;
-    }
-    #tool-viewport canvas { display: block; width: 100% !important; height: 100% !important; }
-    #tool-label {
-      position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
-      background: rgba(0,191,165,0.15); border: 1px solid rgba(0,191,165,0.3);
-      color: #00bfa5; font-size: 0.6rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.1em;
-      padding: 5px 14px; border-radius: 2rem; pointer-events: none; z-index: 20;
-      white-space: nowrap;
-    }
-
-    /* Side Panel Console */
-    .console-card {
-      background: rgba(255, 255, 255, 0.95);
-      backdrop-filter: blur(10px);
-      border-radius: 2rem;
-      border: 1px solid rgba(0, 191, 165, 0.1);
-      box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
-      padding: 1.5rem;
-    }
-
-    #clinical-log {
-      position: absolute; right: 20px; top: 20px; bottom: 80px;
-      width: 400px; background: rgba(255, 255, 255, 0.98);
-      border-radius: 1.5rem; border: 1px solid rgba(0, 191, 165, 0.3);
-      box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.25);
-      padding: 0; color: #475569; display: flex; flex-direction: column;
-      backdrop-filter: blur(16px); transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-      z-index: 100; opacity: 0; pointer-events: none; transform: translateX(40px);
-    }
-    @media (max-width: 768px) {
-        #clinical-log {
-            left: 10px; right: 10px; bottom: 10px; top: auto;
-            width: auto; height: 60vh;
-            transform: translateY(100%);
-            border-radius: 2rem 2rem 0 0;
-        }
-    }
-    #clinical-log.open { opacity: 1; pointer-events: auto; transform: translateX(0); }
-    @media (max-width: 768px) { #clinical-log.open { transform: translateY(0); } }
-    
-    .log-entry.clinical { 
-      border-left: 4px solid #00bfa5; 
-      background: linear-gradient(to right, #f0fdfa, #ffffff);
-      padding: 15px;
-      margin-top: 10px;
-      border-radius: 0.5rem 1rem 1rem 0.5rem;
-      box-shadow: 0 4px 6px -1px rgba(0, 191, 165, 0.1);
-    }
-    
-    /* Scanning Line Animation */
-    .scanning-line {
-        position: absolute; left: 0; width: 100%; height: 2px;
-        background: rgba(0, 191, 165, 0.8);
-        box-shadow: 0 0 15px #00bfa5;
-        z-index: 5; pointer-events: none;
-        animation: scanMove 3s infinite ease-in-out;
-    }
-    @keyframes scanMove { 0% { top: 0; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
-    
-    @keyframes ping-slow {
-      0% { transform: translate(-50%, -50%) scale(1); opacity: 0.8; }
-      100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
-    }
-    @keyframes ping-slower {
-      0% { transform: translate(-50%, -50%) scale(1); opacity: 0.5; }
-      100% { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-    }
-    @keyframes floating {
-      0% { transform: translateY(0px) scale(1.05); }
-      50% { transform: translateY(-15px) scale(1.1); }
-      100% { transform: translateY(0px) scale(1.05); }
-    }
-
-    .animate-ping-slow { animation: ping-slow 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
-    .animate-ping-slower { animation: ping-slower 5s cubic-bezier(0, 0, 0.2, 1) infinite; }
-
     #log-toggle-btn {
-      position: absolute; left: 14px; bottom: 14px;
-      padding: 8px 16px; background: #00bfa5; color: white;
-      border-radius: 2rem; font-weight: 700; font-size: 0.72rem;
-      box-shadow: 0 6px 12px -2px rgba(0, 191, 165, 0.35);
-      transition: all 0.25s ease; z-index: 110;
+      position:absolute; left:14px; bottom:14px;
+      padding:8px 16px; background:#00bfa5; color:#fff;
+      border-radius:2rem; font-weight:700; font-size:0.72rem;
+      box-shadow:0 6px 12px -2px rgba(0,191,165,0.35);
+      transition:all 0.25s; z-index:110;
     }
 
-    /* Surgical Tool Selector HUD (lives inside #tool-viewport) */
+    /* ── Right: Three.js tool viewport ─────────────────────── */
+    #tool-viewport {
+      flex: 0 0 35%; position:relative;
+      background:#07111e; overflow:hidden;
+    }
+    #tool-viewport canvas { display:block; width:100% !important; height:100% !important; }
+    #tool-label {
+      position:absolute; bottom:50px; left:50%; transform:translateX(-50%);
+      background:rgba(0,191,165,0.15); border:1px solid rgba(0,191,165,0.3);
+      color:#00bfa5; font-size:0.6rem; font-weight:700;
+      text-transform:uppercase; letter-spacing:0.1em;
+      padding:5px 14px; border-radius:2rem; pointer-events:none; z-index:20;
+      white-space:nowrap;
+    }
     #tool-selector {
-      position: absolute; left: 50%; bottom: 48px; transform: translateX(-50%);
-      display: flex; gap: 6px; z-index: 110;
+      position:absolute; left:50%; bottom:14px; transform:translateX(-50%);
+      display:flex; gap:6px; z-index:110;
     }
     .tool-btn {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      padding: 8px 12px;
-      background: rgba(10, 23, 41, 0.85);
-      border: 1px solid rgba(0, 191, 165, 0.3);
-      border-radius: 1rem; color: #94a3b8;
-      font-size: 0.6rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.05em; cursor: pointer;
-      transition: all 0.25s ease; backdrop-filter: blur(8px);
+      display:flex; flex-direction:column; align-items:center; gap:4px;
+      padding:8px 12px;
+      background:rgba(10,23,41,0.85); border:1px solid rgba(0,191,165,0.3);
+      border-radius:1rem; color:#94a3b8;
+      font-size:0.6rem; font-weight:700; text-transform:uppercase;
+      letter-spacing:0.05em; cursor:pointer;
+      transition:all 0.25s; backdrop-filter:blur(8px);
     }
-    .tool-btn i { font-size: 1rem; }
+    .tool-btn i { font-size:1rem; }
     .tool-btn:hover, .tool-btn.active {
-      background: rgba(0, 191, 165, 0.2);
-      border-color: #00bfa5; color: #00bfa5;
-      box-shadow: 0 0 16px rgba(0,191,165,0.3);
+      background:rgba(0,191,165,0.2); border-color:#00bfa5; color:#00bfa5;
+      box-shadow:0 0 16px rgba(0,191,165,0.3);
     }
-    
-    .step-indicator {
-        width: 32px; height: 32px; border-radius: 50%;
-        display: flex; items-center; justify-center; 
-        background: #f1f5f9; color: #94a3b8; font-weight: 700; font-size: 0.85rem;
-        border: 2px solid transparent; transition: all 0.3s;
-    }
-    .step-active .step-indicator { background: #00bfa5; color: white; border-color: #00bfa5; box-shadow: 0 0 15px rgba(0, 191, 165, 0.4); }
 
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+    /* ── Clinical log panel ─────────────────────────────────── */
+    #clinical-log {
+      position:absolute; right:20px; top:20px; bottom:80px; width:400px;
+      background:rgba(255,255,255,0.98); border-radius:1.5rem;
+      border:1px solid rgba(0,191,165,0.3);
+      box-shadow:0 30px 60px -12px rgba(0,0,0,0.25);
+      padding:0; color:#475569; display:flex; flex-direction:column;
+      backdrop-filter:blur(16px);
+      transition:all 0.5s cubic-bezier(0.175,0.885,0.32,1.275);
+      z-index:100; opacity:0; pointer-events:none; transform:translateX(40px);
+    }
+    @media (max-width:768px) {
+      #clinical-log { left:10px; right:10px; bottom:10px; top:auto; width:auto; height:60vh;
+        transform:translateY(100%); border-radius:2rem 2rem 0 0; }
+    }
+    #clinical-log.open { opacity:1; pointer-events:auto; transform:translateX(0); }
+    @media (max-width:768px) { #clinical-log.open { transform:translateY(0); } }
+    .log-entry.clinical {
+      border-left:4px solid #00bfa5;
+      background:linear-gradient(to right,#f0fdfa,#ffffff);
+      padding:15px; margin-top:10px;
+      border-radius:0.5rem 1rem 1rem 0.5rem;
+      box-shadow:0 4px 6px -1px rgba(0,191,165,0.1);
+    }
+
+    /* ── Console cards ──────────────────────────────────────── */
+    .console-card {
+      background:rgba(255,255,255,0.95); backdrop-filter:blur(10px);
+      border-radius:2rem; border:1px solid rgba(0,191,165,0.1);
+      box-shadow:0 10px 30px -5px rgba(0,0,0,0.05); padding:1.5rem;
+    }
+    .step-indicator {
+      width:32px; height:32px; border-radius:50%;
+      display:flex; align-items:center; justify-content:center;
+      background:#f1f5f9; color:#94a3b8; font-weight:700; font-size:0.85rem;
+      border:2px solid transparent; transition:all 0.3s;
+    }
+    .step-active .step-indicator { background:#00bfa5; color:#fff; border-color:#00bfa5; box-shadow:0 0 15px rgba(0,191,165,0.4); }
+
+    @keyframes scanning-line { 0%{top:0;opacity:0;} 50%{opacity:1;} 100%{top:100%;opacity:0;} }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
   </style>
 </head>
 <body class="bg-[#f8fafb] text-slate-800">
 
+  <!-- NAV -->
   <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between">
       <div class="flex items-center gap-x-2 lg:gap-x-4">
         <div class="w-8 h-8 lg:w-10 lg:h-10 bg-[#00bfa5] rounded-lg lg:rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
-            <i class="fa-solid fa-heart-pulse text-lg lg:text-xl"></i>
+          <i class="fa-solid fa-heart-pulse text-lg lg:text-xl"></i>
         </div>
         <div>
           <h1 class="text-lg lg:text-xl font-bold text-[#0a3d62]">Maternal AI</h1>
           <p class="text-[8px] lg:text-[10px] text-slate-400 font-bold uppercase tracking-wider hidden sm:block">Surgical Prediction Chamber</p>
         </div>
       </div>
-
       <div class="hidden lg:flex items-center gap-x-6 text-sm">
         <a href="/surgical" class="text-[#00bfa5] font-bold"><i class="fa-solid fa-robot mr-1"></i> Surgical</a>
         <a href="/settings" class="text-slate-500 hover:text-[#00bfa5]"><i class="fa-solid fa-cog mr-1"></i> Settings</a>
         <a href="/help" class="text-slate-500 hover:text-[#00bfa5]"><i class="fa-solid fa-circle-question mr-1"></i> Help</a>
         <div class="h-6 w-px bg-slate-200"></div>
         <div class="flex items-center gap-x-3">
-            <span id="user-name" class="font-semibold text-slate-600">Surgeon</span>
-            <button onclick="logoutUser()" class="bg-[#0a3d62] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-[#00bfa5] transition-all">Logout</button>
+          <span id="user-name" class="font-semibold text-slate-600">Surgeon</span>
+          <button onclick="logoutUser()" class="bg-[#0a3d62] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-[#00bfa5] transition-all">Logout</button>
         </div>
       </div>
-      
-      <!-- Mobile Toggle -->
       <button id="mobileNavBtn" class="lg:hidden text-slate-600 p-2"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
     </div>
-    
-    <!-- Mobile Dropdown -->
     <div id="mobileDropdown" class="hidden lg:hidden flex-col bg-white border-t border-slate-100 px-6 py-5 space-y-5 absolute top-full left-0 w-full shadow-xl">
       <a href="/surgical" class="text-[#00bfa5] font-bold flex items-center gap-x-3"><i class="fa-solid fa-robot w-6"></i> Surgical AI</a>
       <a href="/settings" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-cog w-6"></i> Settings</a>
@@ -235,14 +180,13 @@
   </nav>
 
   <main class="max-w-7xl mx-auto px-3 lg:px-6 py-4 lg:py-8">
-    
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8 items-start">
-      
-      <!-- LEFT: STAGE AREA (split: 2D scan + 3D tools) -->
+
+      <!-- LEFT: stage -->
       <div class="lg:col-span-8 order-1">
         <div id="stage-container">
 
-          <!-- 2D SCAN PANEL -->
+          <!-- 2-D SCAN PANEL -->
           <div id="scan-panel">
             <div id="scan-placeholder">
               <i class="fa-solid fa-ultrasound"></i>
@@ -262,348 +206,261 @@
             </div>
           </div>
 
-          <!-- 3D TOOL VIEWPORT -->
+          <!-- 3-D TOOL VIEWPORT -->
           <div id="tool-viewport">
-            <div id="tool-label">Select Instrument â†“</div>
+            <div id="tool-label">Select Instrument ↓</div>
           </div>
 
         </div>
 
         <div class="mt-4 lg:mt-6 flex flex-col sm:flex-row items-center justify-between p-4 lg:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
-            <div class="flex items-center gap-4 mb-4 sm:mb-0">
-                <div class="w-10 h-10 lg:w-12 lg:h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-[#00bfa5]">
-                    <i class="fa-solid fa-wand-sparkles text-xl lg:text-2xl"></i>
-                </div>
-                <div>
-                    <h4 class="font-bold text-sm lg:text-base text-slate-800">Adaptive Digital Twin</h4>
-                    <p class="text-[10px] lg:text-xs text-slate-400">Rehearsal state generated from telemetry</p>
-                </div>
+          <div class="flex items-center gap-4 mb-4 sm:mb-0">
+            <div class="w-10 h-10 lg:w-12 lg:h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-[#00bfa5]">
+              <i class="fa-solid fa-wand-sparkles text-xl lg:text-2xl"></i>
             </div>
-            <div class="flex gap-2">
-                <span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] lg:text-[10px] font-bold">READY FOR REHEARSAL</span>
+            <div>
+              <h4 class="font-bold text-sm lg:text-base text-slate-800">Adaptive Digital Twin</h4>
+              <p class="text-[10px] lg:text-xs text-slate-400">Rehearsal state generated from telemetry</p>
             </div>
+          </div>
+          <div class="flex gap-2">
+            <span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] lg:text-[10px] font-bold">READY FOR REHEARSAL</span>
+          </div>
         </div>
       </div>
 
-      <!-- RIGHT: CONSOLE AREA (CONTROLS) -->
+      <!-- RIGHT: console -->
       <div class="lg:col-span-4 space-y-4 lg:space-y-6 order-2">
-        
-        <!-- STEP 1: VITALS -->
+
+        <!-- VITALS -->
         <div class="console-card step-active">
-            <div class="flex items-center gap-4 mb-6">
-                <div class="step-indicator">1</div>
-                <div>
-                    <h3 class="font-bold text-slate-800">Telemetry</h3>
-                    <p class="text-[10px] text-slate-400">Patient Vitals</p>
-                </div>
+          <div class="flex items-center gap-4 mb-6">
+            <div class="step-indicator">1</div>
+            <div><h3 class="font-bold text-slate-800">Telemetry</h3><p class="text-[10px] text-slate-400">Patient Vitals</p></div>
+          </div>
+          <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">BP (mmHg)</label>
+              <input type="text" id="bp" value="120/80" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
             </div>
-            <div class="grid grid-cols-2 gap-3 mb-4">
-                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">BP (mmHg)</label>
-                    <input type="text" id="bp" value="120/80" placeholder="120/80" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
-                </div>
-                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">SpO2 (%)</label>
-                    <input type="number" id="spo2" value="98" min="70" max="100" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
-                </div>
-                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Maternal HR</label>
-                    <input type="number" id="mhr" value="82" min="40" max="180" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
-                </div>
-                <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
-                    <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Fetal HR</label>
-                    <input type="number" id="fhr" value="145" min="60" max="220" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
-                </div>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">SpO2 (%)</label>
+              <input type="number" id="spo2" value="98" min="70" max="100" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
             </div>
-            <button onclick="saveVitals()" class="w-full bg-[#0a3d62] text-white py-3 rounded-xl text-xs font-bold hover:bg-[#00bfa5] transition-all">Submit Vitals</button>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Maternal HR</label>
+              <input type="number" id="mhr" value="82" min="40" max="180" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
+            </div>
+            <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
+              <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">Fetal HR</label>
+              <input type="number" id="fhr" value="145" min="60" max="220" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
+            </div>
+          </div>
+          <button onclick="saveVitals()" class="w-full bg-[#0a3d62] text-white py-3 rounded-xl text-xs font-bold hover:bg-[#00bfa5] transition-all">Submit Vitals</button>
         </div>
 
-        <!-- STEP 2: SCAN -->
+        <!-- SCAN UPLOAD -->
         <div class="console-card">
-            <div class="flex items-center gap-4 mb-4">
-                <div class="step-indicator">2</div>
-                <div>
-                    <h3 class="font-bold text-slate-800">Clinical Focus</h3>
-                    <p class="text-[10px] text-slate-400">Scan Transformation</p>
-                </div>
-            </div>
-            <div id="uploadArea" onclick="document.getElementById('uploadInput').click()" 
-                 class="border-2 border-dashed border-slate-200 hover:border-[#00bfa5] bg-slate-50 rounded-2xl p-6 text-center cursor-pointer transition group">
-                <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 group-hover:text-[#00bfa5] mb-2"></i>
-                <p class="text-xs font-bold text-slate-500">Drop Ultrasound Image</p>
-            </div>
-            <input type="file" id="uploadInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-            
-            <div id="previewContainer" class="mt-4 hidden animate-pulse">
-                <canvas id="previewCanvas" class="w-full rounded-xl border border-slate-200 grayscale opacity-50"></canvas>
-                <div id="aiResults" class="mt-4"></div>
-            </div>
+          <div class="flex items-center gap-4 mb-4">
+            <div class="step-indicator">2</div>
+            <div><h3 class="font-bold text-slate-800">Clinical Focus</h3><p class="text-[10px] text-slate-400">Scan Transformation</p></div>
+          </div>
+          <div id="uploadArea" onclick="document.getElementById('uploadInput').click()"
+               class="border-2 border-dashed border-slate-200 hover:border-[#00bfa5] bg-slate-50 rounded-2xl p-6 text-center cursor-pointer transition group">
+            <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-300 group-hover:text-[#00bfa5] mb-2"></i>
+            <p class="text-xs font-bold text-slate-500">Drop Ultrasound Image</p>
+          </div>
+          <input type="file" id="uploadInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
+          <div id="previewContainer" class="mt-4 hidden animate-pulse">
+            <canvas id="previewCanvas" class="w-full rounded-xl border border-slate-200 grayscale opacity-50"></canvas>
+            <div id="aiResults" class="mt-4"></div>
+          </div>
         </div>
 
-        <!-- STEP 3: CLINICAL ARCHIVE (HISTORY) -->
+        <!-- HISTORY -->
         <div class="console-card">
-            <div class="flex items-center justify-between mb-4">
-                <div class="flex items-center gap-4">
-                    <div class="step-indicator"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                    <div>
-                        <h3 class="font-bold text-slate-800">Clinical Archive</h3>
-                        <p class="text-[10px] text-slate-400">Past Records</p>
-                    </div>
-                </div>
-                <button onclick="loadHistory()" class="text-slate-400 hover:text-[#00bfa5] transition-colors p-2">
-                    <i class="fa-solid fa-arrows-rotate text-xs"></i>
-                </button>
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-4">
+              <div class="step-indicator"><i class="fa-solid fa-clock-rotate-left"></i></div>
+              <div><h3 class="font-bold text-slate-800">Clinical Archive</h3><p class="text-[10px] text-slate-400">Past Records</p></div>
             </div>
-            <div id="historyList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1 custom-scrollbar">
-                <div class="text-center py-6">
-                    <i class="fa-solid fa-circle-notch fa-spin text-[#00bfa5] mb-2"></i>
-                    <p class="text-[10px] text-slate-400">Synchronizing records...</p>
-                </div>
+            <button onclick="loadHistory()" class="text-slate-400 hover:text-[#00bfa5] transition-colors p-2">
+              <i class="fa-solid fa-arrows-rotate text-xs"></i>
+            </button>
+          </div>
+          <div id="historyList" class="space-y-2 max-h-[250px] overflow-y-auto pr-1">
+            <div class="text-center py-6">
+              <i class="fa-solid fa-circle-notch fa-spin text-[#00bfa5] mb-2"></i>
+              <p class="text-[10px] text-slate-400">Synchronizing records...</p>
             </div>
-        </div>
-
-        <!-- ANALYSIS STATUS -->
-        <div id="status" class="bg-[#0a3d62] text-white p-4 rounded-3xl text-center text-xs font-bold hidden">
-            <i class="fa-solid fa-microchip mr-2 animate-spin"></i> Analyzing...
+          </div>
         </div>
 
       </div>
-
     </div>
   </main>
 
   <script>
-    // System Auth & Identity
-    const userStr = localStorage.getItem('lumi_user');
-    if (!userStr) { window.location.replace('/login'); }
+    // ── Auth ──────────────────────────────────────────────────────────────
+    const storedUser = localStorage.getItem('lumi_user');
+    if (!storedUser) { window.location.href = '/login'; }
     else {
       try {
-        const user = JSON.parse(userStr);
-        document.getElementById('user-name').textContent = user.email || 'Surgeon';
+        const u = JSON.parse(storedUser);
+        document.getElementById('user-name').textContent = u.full_name || 'Surgeon';
+      } catch(e) {}
+    }
+    function logoutUser() {
+      localStorage.removeItem('lumi_user'); window.location.href = '/login';
+    }
+    document.getElementById('mobileNavBtn').addEventListener('click', function() {
+      document.getElementById('mobileDropdown').classList.toggle('hidden');
+    });
+
+    // ── Logging ───────────────────────────────────────────────────────────
+    function toggleLog() { document.getElementById('clinical-log').classList.toggle('open'); }
+
+    function addLog(msg, type) {
+      const c    = document.getElementById('log-content');
+      const div  = document.createElement('div');
+      const icon = type === 'success' ? 'fa-check-circle text-teal-500'
+                 : type === 'error'   ? 'fa-circle-exclamation text-red-400'
+                 : 'fa-circle-info text-blue-400';
+      div.className = 'log-entry clinical';
+      div.style.animation = 'fadeIn 0.4s ease forwards';
+      div.innerHTML = '<div class="flex items-start gap-3"><i class="fa-solid ' + icon + ' mt-0.5 text-sm flex-shrink-0"></i>'
+        + '<div><p class="text-[11px] font-semibold text-slate-700 leading-relaxed">' + msg + '</p>'
+        + '<p class="text-[9px] text-slate-400 mt-1">' + new Date().toLocaleTimeString() + '</p></div></div>';
+      c.prepend(div);
+    }
+
+    // ── CSRF ──────────────────────────────────────────────────────────────
+    function getCSRFToken() {
+      const match = document.cookie.match(/csrftoken=([^;]+)/);
+      return match ? match[1] : '';
+    }
+
+    // ── Vitals ────────────────────────────────────────────────────────────
+    async function saveVitals() {
+      const bp = document.getElementById('bp').value;
+      const spo2 = document.getElementById('spo2').value;
+      const mhr  = document.getElementById('mhr').value;
+      const fhr  = document.getElementById('fhr').value;
+      if (!bp || !spo2 || !mhr || !fhr) { addLog('Please fill all vitals.', 'error'); return; }
+      addLog('Telemetry submitted: BP ' + bp + ', SpO2 ' + spo2 + '%, MHR ' + mhr + ', FHR ' + fhr, 'success');
+      try {
+        await fetch('/api/v1/vitals/', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+          body: JSON.stringify({ bp, spo2, maternal_hr: mhr, fetal_hr: fhr })
+        });
       } catch(e) {}
     }
 
-    function logoutUser() { localStorage.removeItem('lumi_user'); window.location.href = '/login'; }
-
-    // CSRF
-    function getCookie(name) {
-      let v = document.cookie.match('(^|;) ?' + name + '=([^;]*)(;|$)');
-      return v ? v[2] : null;
-    }
-
-    // Logging
-    function addLog(msg, type = 'info') {
-      const content = document.getElementById('log-content');
-      const div = document.createElement('div');
-      div.className = `log-entry ${type} mb-4 border-l-2 border-[#00bfa5] p-3 rounded-r-xl transition-all`;
-      if (type === 'error') div.classList.add('border-red-500', 'bg-red-50');
-      if (type === 'success') div.classList.add('border-green-500', 'bg-green-50');
-      
-      const icon = type === 'error' ? 'fa-triangle-exclamation' : (type === 'success' ? 'fa-circle-check' : (type === 'clinical' ? 'fa-user-doctor' : 'fa-info-circle'));
-      const color = type === 'error' ? 'text-red-500' : (type === 'clinical' ? 'text-[#00bfa5]' : 'text-slate-400');
-      
-      div.innerHTML = `
-        <div class="flex gap-3">
-            <i class="fa-solid ${icon} mt-1 text-xs ${color}"></i>
-            <div class="flex-1">
-                <div class="flex justify-between items-center mb-1">
-                    <span class="text-[8px] font-black opacity-40 uppercase tracking-widest">${new Date().toLocaleTimeString()}</span>
-                    ${type === 'clinical' ? '<span class="text-[8px] bg-[#00bfa5]/10 text-[#00bfa5] px-1.5 py-0.5 rounded-md font-bold">AI CLINICAL INSIGHT</span>' : ''}
-                </div>
-                <div class="${type === 'clinical' ? 'text-slate-800 font-bold text-sm leading-relaxed' : 'text-xs text-slate-600'}">${msg}</div>
-            </div>
-        </div>
-      `;
-      content.prepend(div);
-      
-      const hud = document.getElementById('hud-overlay');
-      hud.textContent = msg;
-      hud.style.background = type === 'error' ? '#ef4444' : (type === 'success' ? '#10b981' : '#00bfa5');
-    }
-
-    function toggleLog() { document.getElementById('clinical-log').classList.toggle('open'); }
-
-    // Logic: Vitals
-    async function saveVitals() {
-      const data = { 
-        maternal_bp: document.getElementById('bp').value, 
-        maternal_hr: document.getElementById('mhr').value, 
-        fetal_hr: document.getElementById('fhr').value, 
-        spo2: document.getElementById('spo2').value 
-      };
-      addLog("Streaming vitals to cloud center...");
-      try {
-        const res = await fetch("/api/v1/vitals/", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "X-CSRFToken": getCookie('csrftoken') },
-          body: JSON.stringify(data)
-        });
-        const result = await res.json();
-        if (result.success || !result.error) { addLog("Vitals Synchronized.", "success"); }
-        else { addLog("Sync Failed: " + (result.error || "Internal Error"), "error"); }
-      } catch (err) { addLog("Network Disruption.", "error"); }
-    }
-
-    // Logic: Scan Upload
-    async function handleImageUpload(e) {
-      const file = e.target.files[0];
+    // ── Scan upload ───────────────────────────────────────────────────────
+    async function handleImageUpload(event) {
+      const file = event.target.files[0];
       if (!file) return;
 
       document.getElementById('previewContainer').classList.remove('hidden');
-      document.getElementById('status').classList.remove('hidden');
-      addLog(`Initializing holographic scan sequence: ${file.name}`);
-
-      // Preview
+      const canvas = document.getElementById('previewCanvas');
+      const ctx    = canvas.getContext('2d');
       const reader = new FileReader();
-      reader.onload = (ev) => {
+      reader.onload = function(e) {
         const img = new Image();
-        img.onload = () => {
-          const canvas = document.getElementById('previewCanvas');
-          canvas.width = img.width; canvas.height = img.height;
-          canvas.getContext('2d').drawImage(img, 0, 0);
+        img.onload = function() {
+          canvas.width  = img.width;
+          canvas.height = img.height;
+          ctx.drawImage(img, 0, 0);
         };
-        img.src = ev.target.result;
-        if (window.updateScanHologram) window.updateScanHologram(ev.target.result);
+        img.src = e.target.result;
+        window.updateScanHologram(e.target.result, []);
       };
       reader.readAsDataURL(file);
 
+      addLog('Uploading scan for AI analysis...', 'info');
+
       const formData = new FormData();
-      formData.append("image", file);
-      
+      formData.append('image', file);
+
       try {
-        const res = await fetch("/api/v1/upload/", { 
-          method: "POST", 
-          body: formData, 
-          headers: { "X-CSRFToken": getCookie('csrftoken') } 
+        const res  = await fetch('/api/v1/upload/', {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCSRFToken() },
+          body: formData
         });
-        const result = await res.json();
-        document.getElementById('status').classList.add('hidden');
-        
-        if (result.digital_twin && result.digital_twin.success) {
-          renderClinicalReport(result.digital_twin);
-          syncDigitalTwin(result.digital_twin.anomalies);
-        }
-      } catch (err) { addLog("AI Analytics Failure.", "error"); }
-      loadHistory();
-    }
-
-    function renderClinicalReport(aiData) {
-      const anomalies = aiData.anomalies;
-      const resultsDiv = document.getElementById('aiResults');
-      
-      addLog(`${anomalies.length} Intelligence Markers Identified.`, "success");
-      if(!document.getElementById('clinical-log').classList.contains('open')) toggleLog();
-
-      // Start Professional Report
-      let reportHtml = `
-        <div class="mt-6 border-t border-slate-100 pt-6 animate-fadeIn">
-            <div class="flex items-center justify-between mb-4">
-                <h5 class="text-[10px] font-black uppercase text-[#0a3d62] tracking-widest flex items-center gap-2">
-                    <i class="fa-solid fa-file-medical text-[#00bfa5]"></i> Diagnostic Intelligence Report
-                </h5>
-                <span class="text-[8px] bg-teal-50 text-[#00bfa5] px-2 py-0.5 rounded-full font-bold">VERIFIED</span>
-            </div>
-
-            <div class="space-y-4">
-                <!-- PART 1: LANDMARK STATUS -->
-                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                    <div class="text-[9px] font-bold text-slate-400 uppercase mb-3">Anatomical Landmark Verification</div>
-                    <div class="grid grid-cols-2 gap-2">
-                        ${generateLandmarkTag("Skull Contour", 98)}
-                        ${generateLandmarkTag("Midline Falx", 95)}
-                        ${generateLandmarkTag("Thalamus", 92)}
-                        ${generateLandmarkTag("CSP Marker", 88)}
-                    </div>
-                </div>
-
-                <!-- PART 2: CLINICAL FINDINGS -->
-                <div class="space-y-2">
-                    <div class="text-[9px] font-bold text-slate-400 uppercase ml-1 mb-1">Observation Registry</div>
-                    ${anomalies.map(a => {
-                        addLog(`TRANSCRIPT: ${a.description}`, "clinical");
-                        const isCritical = a.label.toLowerCase().includes('critical') || a.label.toLowerCase().includes('previa');
-                        const colorClass = isCritical ? 'bg-red-50 text-red-600 border-red-100' : 'bg-blue-50 text-blue-600 border-blue-100';
-                        return `
-                        <div class="p-3 ${colorClass} border rounded-xl flex items-start gap-3 transition-transform hover:scale-[1.02]">
-                            <i class="fa-solid ${isCritical ? 'fa-triangle-exclamation' : 'fa-circle-info'} mt-1"></i>
-                            <div>
-                                <div class="text-[10px] font-black uppercase">${a.label}</div>
-                                <div class="text-[9px] font-medium leading-tight mt-0.5 opacity-80">${a.description}</div>
-                            </div>
-                        </div>`;
-                    }).join('')}
-                </div>
-
-                <!-- PART 3: CASE SUMMARY -->
-                <div class="p-4 bg-[#0a3d62] rounded-2xl text-white">
-                    <div class="flex items-center gap-2 mb-2">
-                        <i class="fa-solid fa-brain text-[#00bfa5] text-xs"></i>
-                        <span class="text-[9px] font-black uppercase tracking-wider">AI Clinician Interpretation</span>
-                    </div>
-                    <p class="text-[10px] leading-relaxed font-medium opacity-90">
-                        Scan indicates high-fidelity axial view. The presence of CSP and central midline falx suggest normal neuro-development. No immediate high-risk markers detected in the primary biometry zone.
-                    </p>
-                </div>
-            </div>
-        </div>
-      `;
-      resultsDiv.innerHTML = reportHtml;
-    }
-
-    function generateLandmarkTag(label, conf) {
-        return `
-            <div class="flex items-center justify-between bg-white px-3 py-2 rounded-xl border border-slate-100 shadow-sm">
-                <span class="text-[9px] font-bold text-slate-600">${label}</span>
-                <span class="text-[8px] font-black text-[#00bfa5]">${conf}%</span>
-            </div>
-        `;
-    }
-
-    // History Retrieval
-    async function loadHistory() {
-      const historyList = document.getElementById('historyList');
-      try {
-        const res = await fetch("/api/v1/history/");
         const data = await res.json();
-        
+        if (data.success) {
+          if (data.image_url) window.updateScanHologram(data.image_url, []);
+          // Backend returns 'digital_twin', not 'analysis_results'
+          var ai = data.digital_twin || data.analysis_results;
+          if (ai && ai.success) {
+            renderClinicalReport(ai);
+            window.syncDigitalTwin(ai.anomalies);
+          }
+          addLog('Analysis complete. ' + (ai ? (ai.count || 0) + ' finding(s) detected.' : 'No findings.'), 'success');
+        } else {
+          addLog('Upload error: ' + (data.error || 'Unknown'), 'error');
+        }
+      } catch(e) {
+        addLog('Network error: ' + e.message, 'error');
+      }
+    }
+
+    // ── Clinical report renderer ──────────────────────────────────────────
+    function renderClinicalReport(result) {
+      const container = document.getElementById('aiResults');
+      if (!result || !result.anomalies) { container.innerHTML = ''; return; }
+
+      const confColor = function(c) {
+        if (c >= 0.8) return 'text-red-500';
+        if (c >= 0.6) return 'text-amber-500';
+        return 'text-teal-500';
+      };
+
+      container.innerHTML = result.anomalies.map(function(a) {
+        const pct = Math.round((a.confidence || 0) * 100);
+        return '<div class="mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100">'
+          + '<div class="flex items-center justify-between">'
+          + '<span class="text-[10px] font-bold text-slate-700">' + (a.label || 'Finding') + '</span>'
+          + '<span class="text-[10px] font-black ' + confColor(a.confidence||0) + '">' + pct + '%</span>'
+          + '</div>'
+          + (a.description ? '<p class="text-[9px] text-slate-400 mt-1">' + a.description + '</p>' : '')
+          + '</div>';
+      }).join('');
+    }
+
+    // ── History ───────────────────────────────────────────────────────────
+    async function loadHistory() {
+      const list = document.getElementById('historyList');
+      try {
+        const res  = await fetch('/api/v1/history/');
+        const data = await res.json();
         if (data.history && data.history.length > 0) {
-          historyList.innerHTML = '';
-          data.history.forEach(item => {
+          list.innerHTML = '';
+          data.history.forEach(function(item) {
             const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent';
-            const div = document.createElement('div');
-            div.className = "p-3 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-[#00bfa5] hover:bg-teal-50/30 transition-all flex items-center justify-between group";
-            div.onclick = () => inspectHistoryItem(item);
-            div.innerHTML = `
-              <div class="flex items-center gap-3">
-                <div class="w-9 h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:bg-white group-hover:text-[#00bfa5] transition-all">
-                  <i class="fa-solid fa-microscope text-xs"></i>
-                </div>
-                <div>
-                  <div class="text-[10px] font-black text-slate-700 truncate max-w-[140px]">${item.filename || 'Diagnostic Record'}</div>
-                  <div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">${date} â€¢ ${item.processed_as || 'SCAN'}</div>
-                </div>
-              </div>
-              <i class="fa-solid fa-arrow-right-long text-[10px] text-slate-300 group-hover:text-[#00bfa5] group-hover:translate-x-1 transition-all"></i>
-            `;
-            historyList.appendChild(div);
+            const div  = document.createElement('div');
+            div.className = 'p-3 bg-white border border-slate-100 rounded-xl cursor-pointer hover:border-[#00bfa5] hover:bg-teal-50/30 transition-all flex items-center justify-between group';
+            div.onclick   = function() { inspectHistoryItem(item); };
+            div.innerHTML = '<div class="flex items-center gap-3">'
+              + '<div class="w-9 h-9 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-center text-slate-400 group-hover:text-[#00bfa5] transition-all"><i class="fa-solid fa-microscope text-xs"></i></div>'
+              + '<div><div class="text-[10px] font-black text-slate-700 truncate max-w-[140px]">' + (item.filename || 'Diagnostic Record') + '</div>'
+              + '<div class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter">' + date + ' &bull; ' + (item.processed_as || 'SCAN') + '</div></div></div>'
+              + '<i class="fa-solid fa-arrow-right-long text-[10px] text-slate-300 group-hover:text-[#00bfa5] group-hover:translate-x-1 transition-all"></i>';
+            list.appendChild(div);
           });
         } else {
-          historyList.innerHTML = `
-            <div class="text-center py-10">
-                <i class="fa-solid fa-box-open text-slate-200 text-3xl mb-3"></i>
-                <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No Analysis History Found</p>
-                <p class="text-[9px] text-slate-300 mt-1">Upload a scan to begin archiving</p>
-            </div>`;
+          list.innerHTML = '<div class="text-center py-10"><i class="fa-solid fa-box-open text-slate-200 text-3xl mb-3"></i>'
+            + '<p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">No Analysis History Found</p></div>';
         }
-      } catch (err) {
-        console.error("History Fetch Error:", err);
-        historyList.innerHTML = '<div class="text-center py-6 text-[10px] text-red-400 font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i> Data Sync Error</div>';
+      } catch(e) {
+        list.innerHTML = '<div class="text-center py-6 text-[10px] text-red-400 font-bold"><i class="fa-solid fa-circle-exclamation mr-1"></i>Data Sync Error</div>';
       }
     }
 
     function inspectHistoryItem(item) {
-      addLog(`Revisiting analysis for: ${item.filename}`, 'info');
-      // Load into the 2D scan viewer
+      addLog('Revisiting analysis for: ' + item.filename, 'info');
       window.updateScanHologram(item.image_url, []);
       if (item.analysis_results && item.analysis_results.success) {
         renderClinicalReport(item.analysis_results);
@@ -611,284 +468,248 @@
       }
     }
 
-    // Initial Load
     document.addEventListener('DOMContentLoaded', loadHistory);
 
-    // =====================================================================
-    // 2D SCAN ENGINE  â€” left panel, pure canvas, no perspective transforms
-    // =====================================================================
-    const scanOverlay  = document.getElementById('scan-overlay');
-    const scanCtx      = scanOverlay.getContext('2d');
-    const scanImg      = document.getElementById('scan-img');
-    const scanPH       = document.getElementById('scan-placeholder');
-    const hudEl        = document.getElementById('hud-overlay');
-    const confBadge    = document.getElementById('conf-badge');
+    // ════════════════════════════════════════════════════════════════════
+    // 2-D INTELLIGENT SCAN OVERLAY ENGINE
+    // ════════════════════════════════════════════════════════════════════
+    var scanOverlay  = document.getElementById('scan-overlay');
+    var scanCtx      = scanOverlay.getContext('2d');
+    var scanImg      = document.getElementById('scan-img');
+    var scanPH       = document.getElementById('scan-placeholder');
+    var hudEl        = document.getElementById('hud-overlay');
+    var confBadge    = document.getElementById('conf-badge');
 
-    // State
-    let scanDetections = [];   // [{x,y,w,h,label,conf}] in image-pixel coords
-    let scanLineY      = 0;    // current sweep Y in canvas coords
-    let scanLineDir    = 1;    // +1 down, -1 up
-    let noiseTimer     = 0;
-    let noiseAlpha     = 0;
-    let scanRAF        = null;
+    var scanDetections = [];
+    var scanLineY      = 0;
+    var scanLineDir    = 1;
+    var noiseTimer     = 0;
+    var noiseAlpha     = 0;
+    var lockTimer      = 0;
+    var hasLock        = false;
 
-    // Sync canvas size to the rendered image area
     function _syncOverlaySize() {
-      const panel  = document.getElementById('scan-panel');
+      var panel = document.getElementById('scan-panel');
       scanOverlay.width  = panel.clientWidth;
       scanOverlay.height = panel.clientHeight;
     }
 
-    // Translate image-pixel detection coords â†’ canvas coords
-    // (the img element is centred with object-fit:contain)
     function _imgRect() {
-      const r   = scanImg.getBoundingClientRect();
-      const pr  = document.getElementById('scan-panel').getBoundingClientRect();
-      return {
-        x: r.left - pr.left,
-        y: r.top  - pr.top,
-        w: r.width,
-        h: r.height,
-      };
+      var r  = scanImg.getBoundingClientRect();
+      var pr = document.getElementById('scan-panel').getBoundingClientRect();
+      return { x: r.left - pr.left, y: r.top - pr.top, w: r.width, h: r.height };
+    }
+
+    function _confColor(conf, alpha) {
+      if (conf >= 0.80) return 'rgba(239,68,68,'  + alpha + ')';
+      if (conf >= 0.60) return 'rgba(245,158,11,' + alpha + ')';
+      return                   'rgba(0,191,165,'  + alpha + ')';
+    }
+
+    function _toCanvas(det, ir) {
+      var sx = ir.w / (det.raw_img_w || scanImg.naturalWidth  || ir.w);
+      var sy = ir.h / (det.raw_img_h || scanImg.naturalHeight || ir.h);
+      return { x: ir.x + det.x * sx, y: ir.y + det.y * sy, w: det.w * sx, h: det.h * sy };
     }
 
     function _draw2D(now) {
-      scanRAF = requestAnimationFrame(_draw2D);
+      requestAnimationFrame(_draw2D);
       _syncOverlaySize();
-      const cw = scanOverlay.width;
-      const ch = scanOverlay.height;
+      var cw = scanOverlay.width, ch = scanOverlay.height;
       scanCtx.clearRect(0, 0, cw, ch);
-
       if (!scanImg.src || scanImg.style.display === 'none') return;
+      var ir = _imgRect();
+      var t  = now * 0.001;
 
-      const ir = _imgRect();   // where the image sits inside the canvas
+      // 1. Probe noise
+      noiseTimer += 0.016;
+      if (noiseTimer > 0.07) { noiseTimer = 0; noiseAlpha = 0.01 + Math.random() * 0.018; }
+      for (var n = 0; n < 3; n++) {
+        var ny = ir.y + Math.random() * ir.h;
+        scanCtx.beginPath();
+        scanCtx.moveTo(ir.x, ny); scanCtx.lineTo(ir.x + ir.w, ny);
+        scanCtx.strokeStyle = 'rgba(255,255,255,' + noiseAlpha + ')';
+        scanCtx.lineWidth = 0.4; scanCtx.stroke();
+      }
 
-      // â”€â”€ 1. Scan-line sweep â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      const speed = ch * 0.003;         // ~0.3% of canvas height per frame
-      scanLineY += scanLineDir * speed;
+      // 2. Scan-line sweep — slows near detections
+      var spd = ch * 0.0025;
+      for (var si = 0; si < scanDetections.length; si++) {
+        var sb = _toCanvas(scanDetections[si], ir);
+        if (Math.abs(scanLineY - (sb.y + sb.h / 2)) < sb.h * 0.8) spd *= 0.2;
+      }
+      scanLineY += scanLineDir * spd;
       if (scanLineY > ir.y + ir.h) { scanLineY = ir.y + ir.h; scanLineDir = -1; }
       if (scanLineY < ir.y)         { scanLineY = ir.y;        scanLineDir =  1; }
-
-      // Center-fade: brightest in the middle of the scan area
-      const progY    = (scanLineY - ir.y) / ir.h;   // 0â†’1
-      const edgeFade = 1 - Math.abs(progY - 0.5) * 1.6;
-      const lineAlpha = Math.max(0, Math.min(0.7, edgeFade));
-
-      // Main glow bar
-      const grad = scanCtx.createLinearGradient(ir.x, scanLineY - 6, ir.x, scanLineY + 6);
-      grad.addColorStop(0,   `rgba(0,255,200,0)`);
-      grad.addColorStop(0.5, `rgba(0,255,200,${lineAlpha})`);
-      grad.addColorStop(1,   `rgba(0,255,200,0)`);
+      var progY    = (scanLineY - ir.y) / ir.h;
+      var edgeFade = Math.max(0, Math.min(0.65, 1 - Math.abs(progY - 0.5) * 1.5));
+      var grad = scanCtx.createLinearGradient(ir.x, scanLineY - 7, ir.x, scanLineY + 7);
+      grad.addColorStop(0,   'rgba(0,255,200,0)');
+      grad.addColorStop(0.5, 'rgba(0,255,200,' + edgeFade + ')');
+      grad.addColorStop(1,   'rgba(0,255,200,0)');
       scanCtx.fillStyle = grad;
-      scanCtx.fillRect(ir.x, scanLineY - 6, ir.w, 12);
-
-      // Hard bright core line at the centre
+      scanCtx.fillRect(ir.x, scanLineY - 7, ir.w, 14);
       scanCtx.beginPath();
-      scanCtx.moveTo(ir.x, scanLineY);
-      scanCtx.lineTo(ir.x + ir.w, scanLineY);
-      scanCtx.strokeStyle = `rgba(0,255,200,${lineAlpha * 0.9})`;
-      scanCtx.lineWidth   = 1.2;
-      scanCtx.stroke();
+      scanCtx.moveTo(ir.x, scanLineY); scanCtx.lineTo(ir.x + ir.w, scanLineY);
+      scanCtx.strokeStyle = 'rgba(0,255,200,' + (edgeFade * 0.85) + ')';
+      scanCtx.lineWidth = 1.2; scanCtx.stroke();
 
-      // â”€â”€ 2. Probe noise flicker (simulates live ultrasound grain) â”€â”€â”€â”€â”€
-      noiseTimer += 0.016;
-      if (noiseTimer > 0.07) {
-        noiseTimer  = 0;
-        noiseAlpha  = 0.015 + Math.random() * 0.02;
-      }
-      // Thin random horizontal lines inside the image area
-      for (let n = 0; n < 4; n++) {
-        const ny = ir.y + Math.random() * ir.h;
+      // 3. Corner frame
+      var arm = 18;
+      var fc  = [[ir.x,ir.y,1,1],[ir.x+ir.w,ir.y,-1,1],[ir.x+ir.w,ir.y+ir.h,-1,-1],[ir.x,ir.y+ir.h,1,-1]];
+      for (var fi = 0; fi < fc.length; fi++) {
+        var fc2 = fc[fi];
         scanCtx.beginPath();
-        scanCtx.moveTo(ir.x, ny);
-        scanCtx.lineTo(ir.x + ir.w, ny);
-        scanCtx.strokeStyle = `rgba(255,255,255,${noiseAlpha})`;
-        scanCtx.lineWidth   = 0.5;
-        scanCtx.stroke();
+        scanCtx.moveTo(fc2[0]+fc2[2]*arm, fc2[1]);
+        scanCtx.lineTo(fc2[0], fc2[1]);
+        scanCtx.lineTo(fc2[0], fc2[1]+fc2[3]*arm);
+        scanCtx.strokeStyle = 'rgba(0,191,165,0.7)'; scanCtx.lineWidth = 2; scanCtx.stroke();
       }
 
-      // â”€â”€ 3. Clinical corner frame (tight to image) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      const arm = 16, thick = 2;
-      const corners = [
-        [ir.x,         ir.y,          1,  1],
-        [ir.x + ir.w,  ir.y,         -1,  1],
-        [ir.x + ir.w,  ir.y + ir.h, -1, -1],
-        [ir.x,         ir.y + ir.h,  1, -1],
-      ];
-      scanCtx.strokeStyle = 'rgba(0,191,165,0.8)';
-      scanCtx.lineWidth   = thick;
-      corners.forEach(([cx, cy, dx, dy]) => {
-        scanCtx.beginPath();
-        scanCtx.moveTo(cx + dx * arm, cy);
-        scanCtx.lineTo(cx, cy);
-        scanCtx.lineTo(cx, cy + dy * arm);
-        scanCtx.stroke();
-      });
+      // 4. Detections — pixel-accurate overlay
+      if (hasLock) lockTimer = Math.min(lockTimer + 0.04, 1);
+      for (var di = 0; di < scanDetections.length; di++) {
+        var det   = scanDetections[di];
+        var b     = _toCanvas(det, ir);
+        var conf  = det.conf || 0;
+        var pulse = 1 + Math.sin(t * 3.5 + di * 1.1) * 0.025;
+        var px = b.x + b.w*(1-pulse)*0.5, py = b.y + b.h*(1-pulse)*0.5;
+        var pw = b.w*pulse,               ph = b.h*pulse;
+        var cx = px + pw/2,               cy = py + ph/2;
 
-      // â”€â”€ 4. YOLO anomaly brackets & labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-      const scaleX = ir.w / (scanImg.naturalWidth  || ir.w);
-      const scaleY = ir.h / (scanImg.naturalHeight || ir.h);
-
-      scanDetections.forEach((det, i) => {
-        const bx = ir.x + det.x * scaleX;
-        const by = ir.y + det.y * scaleY;
-        const bw = det.w * scaleX;
-        const bh = det.h * scaleY;
-
-        const pulse = 1 + Math.sin(now * 0.004 + i * 0.9) * 0.03;
-        const px    = bx + bw * (1 - pulse) * 0.5;
-        const py    = by + bh * (1 - pulse) * 0.5;
-        const pw    = bw * pulse;
-        const ph    = bh * pulse;
-
-        const isCrit   = det.label && (det.label.toLowerCase().includes('critical') || det.label.toLowerCase().includes('previa'));
-        const boxColor = isCrit ? 'rgba(239,68,68,' : 'rgba(0,191,165,';
-
-        // Corner bracket annotation style
-        const ba = 0.85;
-        scanCtx.strokeStyle = `${boxColor}${ba})`;
-        scanCtx.lineWidth   = 2;
-        const cs = Math.min(pw, ph) * 0.22;  // corner arm size
-
-        [[px, py, 1, 1], [px+pw, py, -1, 1], [px+pw, py+ph, -1, -1], [px, py+ph, 1, -1]].forEach(([bx2, by2, ddx, ddy]) => {
+        // Corner brackets
+        var cs  = Math.min(pw,ph)*0.24;
+        var bcs = [[px,py,1,1],[px+pw,py,-1,1],[px+pw,py+ph,-1,-1],[px,py+ph,1,-1]];
+        scanCtx.strokeStyle = _confColor(conf, 0.9); scanCtx.lineWidth = 2;
+        for (var bi = 0; bi < bcs.length; bi++) {
+          var bc = bcs[bi];
           scanCtx.beginPath();
-          scanCtx.moveTo(bx2 + ddx * cs, by2);
-          scanCtx.lineTo(bx2, by2);
-          scanCtx.lineTo(bx2, by2 + ddy * cs);
+          scanCtx.moveTo(bc[0]+bc[2]*cs,bc[1]); scanCtx.lineTo(bc[0],bc[1]); scanCtx.lineTo(bc[0],bc[1]+bc[3]*cs);
           scanCtx.stroke();
-        });
+        }
 
-        // Pulsing ring at box centre
-        const cx2 = px + pw / 2;
-        const cy2 = py + ph / 2;
-        const ringR = Math.min(pw, ph) * 0.38 * pulse;
-        const ringAlpha = 0.18 + Math.abs(Math.sin(now * 0.004 + i)) * 0.22;
-        scanCtx.beginPath();
-        scanCtx.arc(cx2, cy2, ringR, 0, Math.PI * 2);
-        scanCtx.strokeStyle = `${boxColor}${ringAlpha})`;
-        scanCtx.lineWidth   = 1.5;
-        scanCtx.stroke();
+        // Target-lock crosshair
+        var off = Math.min(pw,ph)*0.55*(1 - lockTimer*0.7);
+        var cl  = 10;
+        scanCtx.strokeStyle = _confColor(conf, 0.5 + lockTimer*0.4); scanCtx.lineWidth = 1.2;
+        var lk = [[cx-off,cy,cx-off-cl,cy],[cx+off,cy,cx+off+cl,cy],
+                   [cx,cy-off,cx,cy-off-cl],[cx,cy+off,cx,cy+off+cl]];
+        for (var li = 0; li < lk.length; li++) {
+          scanCtx.beginPath(); scanCtx.moveTo(lk[li][0],lk[li][1]); scanCtx.lineTo(lk[li][2],lk[li][3]); scanCtx.stroke();
+        }
 
-        // Label tag
-        const label = det.label || 'Finding';
-        const conf  = det.conf  ? `${Math.round(det.conf * 100)}%` : '';
-        const tag   = `${label}  ${conf}`.trim();
-        scanCtx.font         = 'bold 10px Inter, sans-serif';
-        const tw             = scanCtx.measureText(tag).width;
-        const tagX = px;
-        const tagY = py > 20 ? py - 6 : py + ph + 14;
+        // Pulsing ring
+        var ringR = Math.min(pw,ph)*0.35*pulse;
+        var ringA = 0.12 + Math.abs(Math.sin(t*2.8+di*0.8))*0.3;
+        scanCtx.beginPath(); scanCtx.arc(cx, cy, ringR, 0, Math.PI*2);
+        scanCtx.strokeStyle = _confColor(conf, ringA); scanCtx.lineWidth = 1.5; scanCtx.stroke();
 
-        scanCtx.fillStyle = isCrit ? 'rgba(239,68,68,0.88)' : 'rgba(0,191,165,0.88)';
-        scanCtx.beginPath();
-        scanCtx.roundRect(tagX - 4, tagY - 11, tw + 10, 15, 4);
-        scanCtx.fill();
-        scanCtx.fillStyle = '#ffffff';
-        scanCtx.fillText(tag, tagX + 1, tagY);
-      });
+        // Label + confidence bar
+        var confPct = Math.round(conf*100);
+        var tag = (det.label || 'Finding') + '  ' + confPct + '%';
+        scanCtx.font = 'bold 10px Inter,sans-serif';
+        var tw  = scanCtx.measureText(tag).width;
+        var tgW = tw+12, tgH = 16;
+        var tgX = Math.max(ir.x, Math.min(ir.x+ir.w-tgW, px));
+        var tgY = py > ir.y+22 ? py-4 : py+ph+16;
+        scanCtx.fillStyle = _confColor(conf, 0.88);
+        scanCtx.fillRect(tgX, tgY-tgH, tgW, tgH);
+        scanCtx.fillStyle = 'rgba(255,255,255,0.2)'; scanCtx.fillRect(tgX, tgY, tgW, 3);
+        scanCtx.fillStyle = 'rgba(255,255,255,0.7)'; scanCtx.fillRect(tgX, tgY, Math.round(tgW*conf), 3);
+        scanCtx.fillStyle = '#fff'; scanCtx.fillText(tag, tgX+6, tgY-4);
+      }
     }
-
-    // Start the 2D loop immediately
     _draw2D(0);
 
-    // Called to load a new scan image and set detections
-    window.updateScanHologram = (url, detections = []) => {
-      scanDetections = detections;
-
-      scanImg.onload = () => {
-        scanPH.style.display   = 'none';
-        scanImg.style.display  = 'block';
-        hudEl.textContent      = 'Scan Active â€” Probe Sweep â†•';
+    window.updateScanHologram = function(url, detections) {
+      detections = detections || [];
+      scanDetections = detections; hasLock = false; lockTimer = 0;
+      scanImg.onload = function() {
+        scanPH.style.display  = 'none';
+        scanImg.style.display = 'block';
+        hudEl.textContent      = 'Scan Active - Probe Sweep';
         hudEl.style.background = 'rgba(0,191,165,0.9)';
         _syncOverlaySize();
-        addLog('Scan loaded at native resolution â€” probe sweep active.', 'success');
+        addLog('Scan loaded at native aspect ratio. Probe sweep active.', 'success');
       };
-      scanImg.src         = url;
-      scanImg.crossOrigin = 'anonymous';
+      scanImg.src = url; scanImg.crossOrigin = 'anonymous';
     };
 
-    // Anomaly sync: receives [{x,y,w,h,label,conf}] or legacy [{x,y,label}]
-    window.syncDigitalTwin = (anom) => {
-      if (!anom || !anom.length) { scanDetections = []; return; }
-
-      scanDetections = anom.map(a => ({
-        // Support both bbox-style and legacy centre-point style
-        x:     a.bbox ? a.bbox[0] : (a.x || 0),
-        y:     a.bbox ? a.bbox[1] : (a.y || 0),
-        w:     a.bbox ? a.bbox[2] : (scanImg.naturalWidth  * 0.12 || 80),
-        h:     a.bbox ? a.bbox[3] : (scanImg.naturalHeight * 0.12 || 60),
-        label: a.label || 'Finding',
-        conf:  a.confidence || a.conf || null,
-      }));
-
-      const n = scanDetections.length;
-      if (n > 0) {
-        confBadge.style.display  = 'block';
-        confBadge.textContent    = `${n} Finding${n !== 1 ? 's' : ''} Detected`;
-        hudEl.style.background   = 'rgba(239,68,68,0.9)';
-        hudEl.textContent        = 'AI Lock â€” Anomaly Detected';
-      }
-
-      addLog(`${n} intelligence marker${n !== 1 ? 's' : ''} locked onto scan.`, 'success');
+    window.syncDigitalTwin = function(anom) {
+      if (!anom || !anom.length) { scanDetections = []; hasLock = false; return; }
+      scanDetections = anom.map(function(a) {
+        var hasBox    = Array.isArray(a.bbox) && a.bbox.length === 4;
+        var raw_img_w = a.img_w || scanImg.naturalWidth  || 640;
+        var raw_img_h = a.img_h || scanImg.naturalHeight || 480;
+        var x, y, w, h;
+        if (hasBox) {
+          x = a.bbox[0]; y = a.bbox[1]; w = a.bbox[2]; h = a.bbox[3];
+        } else {
+          // Legacy: x/y in normalised -10..+10 space
+          var fx = a.x != null ? (a.x + 10) / 20 : 0.4;
+          var fy = a.y != null ? (10 - a.y) / 20 : 0.4;
+          w = raw_img_w * 0.15; h = raw_img_h * 0.13;
+          x = fx * raw_img_w - w / 2; y = fy * raw_img_h - h / 2;
+        }
+        return { x:x, y:y, w:w, h:h, raw_img_w:raw_img_w, raw_img_h:raw_img_h,
+                 label: a.label || 'Finding', conf: a.confidence || a.conf || 0 };
+      });
+      hasLock = true; lockTimer = 0;
+      var n   = scanDetections.length;
+      var top = scanDetections.reduce(function(best,d) { return d.conf > best.conf ? d : best; }, scanDetections[0]);
+      confBadge.style.display = 'block';
+      confBadge.textContent   = n + ' Finding' + (n !== 1 ? 's' : '') + ' Detected';
+      var isHigh = top.conf >= 0.80;
+      hudEl.style.background  = isHigh ? 'rgba(239,68,68,0.92)' : 'rgba(245,158,11,0.92)';
+      hudEl.textContent       = isHigh ? 'AI Lock - Critical Finding' : 'AI Lock - Anomaly Detected';
+      addLog(n + ' marker' + (n!==1?'s':'') + ' locked. Top: ' + top.label + ' (' + Math.round(top.conf*100) + '%)', 'success');
     };
 
-    // =====================================================================
-    // THREE.JS TOOL VIEWPORT â€” right panel only, no scan plane ever
-    // =====================================================================
-    let scene, camera, renderer, world;
-    let activeTool     = null;
-    let activeToolName = 'trocar';
-    let isToolDragging = false;
-    let prevX = 0, prevY = 0;
+    // ════════════════════════════════════════════════════════════════════
+    // THREE.JS TOOL VIEWPORT (right panel — instruments only)
+    // ════════════════════════════════════════════════════════════════════
+    var scene, camera, renderer, world;
+    var activeTool     = null;
+    var activeToolName = 'trocar';
+    var isToolDragging = false;
+    var prevX = 0, prevY = 0;
 
     function initToolViewport() {
-      const vp = document.getElementById('tool-viewport');
+      var vp = document.getElementById('tool-viewport');
       if (!vp) return;
-
       scene = new THREE.Scene();
       scene.background = new THREE.Color(0x07111e);
-
       camera = new THREE.PerspectiveCamera(38, vp.clientWidth / vp.clientHeight, 1, 2000);
       camera.position.set(0, 15, 170);
-
       renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(vp.clientWidth, vp.clientHeight);
-      Object.assign(renderer.domElement.style, { position: 'absolute', top: '0', left: '0' });
+      Object.assign(renderer.domElement.style, { position:'absolute', top:'0', left:'0' });
       vp.appendChild(renderer.domElement);
-
       world = new THREE.Group();
       scene.add(world);
 
-      // Subtle grid floor
-      const grid = new THREE.GridHelper(300, 30, 0x00bfa5, 0x0d2136);
-      grid.position.y = -90;
-      grid.material.opacity = 0.12;
-      grid.material.transparent = true;
+      // Grid
+      var grid = new THREE.GridHelper(300, 30, 0x00bfa5, 0x0d2136);
+      grid.position.y = -90; grid.material.opacity = 0.12; grid.material.transparent = true;
       world.add(grid);
 
-      // Clinical lighting
+      // Lighting
       scene.add(new THREE.AmbientLight(0xc8dcf0, 0.55));
-      const key = new THREE.DirectionalLight(0xffffff, 1.2);
-      key.position.set(80, 160, 120);
-      scene.add(key);
-      const front = new THREE.PointLight(0x00bfa5, 3.5, 500);
-      front.position.set(0, 60, 120);
-      scene.add(front);
-      const rim = new THREE.PointLight(0x00bfa5, 3.5, 500);
-      rim.position.set(-60, 80, 80);
-      scene.add(rim);
-      const fill = new THREE.PointLight(0x0a3d62, 2, 400);
-      fill.position.set(60, -40, 80);
-      scene.add(fill);
+      var key = new THREE.DirectionalLight(0xffffff, 1.2); key.position.set(80, 160, 120); scene.add(key);
+      var front = new THREE.PointLight(0x00bfa5, 3.5, 500); front.position.set(0, 60, 120); scene.add(front);
+      var rim   = new THREE.PointLight(0x00bfa5, 3.5, 500); rim.position.set(-60, 80, 80);  scene.add(rim);
+      var fill  = new THREE.PointLight(0x0a3d62, 2.0, 400); fill.position.set(60, -40, 80); scene.add(fill);
 
       buildToolSelector();
       spawnTool('trocar');
       animateTool();
 
-      // Right-click drag to move tool
-      vp.addEventListener('contextmenu', e => e.preventDefault());
-      vp.addEventListener('mousedown',   e => { if (e.button === 2) { isToolDragging = true; prevX = e.clientX; prevY = e.clientY; } });
-      window.addEventListener('mousemove', e => {
+      vp.addEventListener('contextmenu', function(e) { e.preventDefault(); });
+      vp.addEventListener('mousedown',   function(e) {
+        if (e.button === 2) { isToolDragging = true; prevX = e.clientX; prevY = e.clientY; }
+      });
+      window.addEventListener('mousemove', function(e) {
         if (isToolDragging && activeTool) {
           activeTool.position.x += (e.clientX - prevX) * 0.18;
           activeTool.position.y -= (e.clientY - prevY) * 0.18;
@@ -897,12 +718,12 @@
           prevX = e.clientX; prevY = e.clientY;
         }
       });
-      window.addEventListener('mouseup', () => { isToolDragging = false; });
+      window.addEventListener('mouseup', function() { isToolDragging = false; });
     }
 
     function animateTool() {
       requestAnimationFrame(animateTool);
-      const now = Date.now() * 0.001;
+      var now = Date.now() * 0.001;
       if (activeTool) {
         activeTool.position.y = 8 + Math.sin(now * 1.5) * 4;
         activeTool.rotation.z = Math.sin(now * 0.45) * 0.04;
@@ -912,67 +733,59 @@
       renderer.render(scene, camera);
     }
 
-    /* â”€â”€â”€ SURGICAL INSTRUMENT FACTORY â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-    const MAT = {
-      steel:     () => new THREE.MeshStandardMaterial({ color: 0xdce8f0, metalness: 0.95, roughness: 0.12 }),
-      darkSteel: () => new THREE.MeshStandardMaterial({ color: 0x5a6e7e, metalness: 0.9,  roughness: 0.2  }),
-      teal:      () => new THREE.MeshStandardMaterial({ color: 0x00bfa5, metalness: 0.6,  roughness: 0.3, emissive: 0x00bfa5, emissiveIntensity: 0.25 }),
-      red:       () => new THREE.MeshStandardMaterial({ color: 0xef4444, metalness: 0.5,  roughness: 0.35 }),
-      gold:      () => new THREE.MeshStandardMaterial({ color: 0xd4a843, metalness: 0.8,  roughness: 0.2  }),
-      white:     () => new THREE.MeshStandardMaterial({ color: 0xf0f4f8, metalness: 0.2,  roughness: 0.7  }),
+    // ── Instrument materials ──────────────────────────────────────────────
+    var MAT = {
+      steel:     function() { return new THREE.MeshStandardMaterial({ color:0xdce8f0, metalness:0.95, roughness:0.12 }); },
+      darkSteel: function() { return new THREE.MeshStandardMaterial({ color:0x5a6e7e, metalness:0.9,  roughness:0.2  }); },
+      teal:      function() { return new THREE.MeshStandardMaterial({ color:0x00bfa5, metalness:0.6,  roughness:0.3, emissive:0x00bfa5, emissiveIntensity:0.25 }); },
+      red:       function() { return new THREE.MeshStandardMaterial({ color:0xef4444, metalness:0.5,  roughness:0.35 }); },
+      gold:      function() { return new THREE.MeshStandardMaterial({ color:0xd4a843, metalness:0.8,  roughness:0.2  }); },
+      white:     function() { return new THREE.MeshStandardMaterial({ color:0xf0f4f8, metalness:0.2,  roughness:0.7  }); },
     };
-    const cyl = (rT, rB, h, s=24) => new THREE.CylinderGeometry(rT, rB, h, s);
+    function cyl(rT,rB,h,s) { return new THREE.CylinderGeometry(rT,rB,h,s||24); }
 
     function buildTrocar() {
-      const g = new THREE.Group();
-      const hm = new THREE.Mesh(cyl(5, 6, 28), MAT.white()); hm.position.y = -42; g.add(hm);
-      for (let i = 0; i < 5; i++) {
-        const r = new THREE.Mesh(cyl(6.2, 6.2, 1.5, 20), MAT.darkSteel()); r.position.y = -32 + i * 5; g.add(r);
-      }
-      const sh = new THREE.Mesh(cyl(2, 2, 55), MAT.steel()); sh.position.y = 3; g.add(sh);
-      const hub = new THREE.Mesh(cyl(7, 6, 10, 32), MAT.darkSteel()); hub.position.y = -22; g.add(hub);
-      const tip = new THREE.Mesh(cyl(0, 2, 12), MAT.steel()); tip.position.y = 36; g.add(tip);
-      const val = new THREE.Mesh(cyl(3.5, 3.5, 3, 20), MAT.teal()); val.position.y = -17; g.add(val);
-      g.rotation.x = Math.PI / 2.4; g.scale.setScalar(0.65); return g;
+      var g  = new THREE.Group();
+      var hm = new THREE.Mesh(cyl(5,6,28),   MAT.white());     hm.position.y  = -42; g.add(hm);
+      for (var i=0;i<5;i++) { var r=new THREE.Mesh(cyl(6.2,6.2,1.5,20),MAT.darkSteel()); r.position.y=-32+i*5; g.add(r); }
+      var sh  = new THREE.Mesh(cyl(2,2,55),  MAT.steel());     sh.position.y  =   3; g.add(sh);
+      var hub = new THREE.Mesh(cyl(7,6,10,32),MAT.darkSteel()); hub.position.y = -22; g.add(hub);
+      var tip = new THREE.Mesh(cyl(0,2,12),  MAT.steel());     tip.position.y =  36; g.add(tip);
+      var val = new THREE.Mesh(cyl(3.5,3.5,3,20),MAT.teal()); val.position.y = -17; g.add(val);
+      g.rotation.x = Math.PI/2.4; g.scale.setScalar(0.65); return g;
     }
 
     function buildNeedleDriver() {
-      const g = new THREE.Group();
-      const rg = new THREE.TorusGeometry(5, 1.2, 12, 32);
-      [[-4, -50], [4, -42]].forEach(([x, y]) => {
-        const r = new THREE.Mesh(rg, MAT.steel()); r.position.set(x, y, 0); g.add(r);
-      });
-      const rt = new THREE.Mesh(cyl(3.5, 3, 20, 16), MAT.darkSteel()); rt.position.y = -28; g.add(rt);
-      const sh = new THREE.Mesh(cyl(1.5, 1.5, 60), MAT.white()); sh.position.y = 4; g.add(sh);
-      const jb = new THREE.Mesh(new THREE.BoxGeometry(4, 10, 3), MAT.gold()); jb.position.y = 36; g.add(jb);
-      [1.5, -1.5].forEach(ox => {
-        const j = new THREE.Mesh(new THREE.BoxGeometry(1.5, 8, 2), MAT.steel()); j.position.set(ox, 36, 0); g.add(j);
-      });
-      const tip = new THREE.Mesh(cyl(0, 1, 6), MAT.steel()); tip.position.y = 42; g.add(tip);
-      g.rotation.x = Math.PI / 2.4; g.scale.setScalar(0.65); return g;
+      var g  = new THREE.Group();
+      var rg = new THREE.TorusGeometry(5,1.2,12,32);
+      [[-4,-50],[4,-42]].forEach(function(p) { var r=new THREE.Mesh(rg,MAT.steel()); r.position.set(p[0],p[1],0); g.add(r); });
+      var rt  = new THREE.Mesh(cyl(3.5,3,20,16),MAT.darkSteel()); rt.position.y  = -28; g.add(rt);
+      var sh  = new THREE.Mesh(cyl(1.5,1.5,60), MAT.white());     sh.position.y  =   4; g.add(sh);
+      var jb  = new THREE.Mesh(new THREE.BoxGeometry(4,10,3), MAT.gold()); jb.position.y = 36; g.add(jb);
+      [1.5,-1.5].forEach(function(ox) { var j=new THREE.Mesh(new THREE.BoxGeometry(1.5,8,2),MAT.steel()); j.position.set(ox,36,0); g.add(j); });
+      var tip = new THREE.Mesh(cyl(0,1,6),MAT.steel()); tip.position.y = 42; g.add(tip);
+      g.rotation.x = Math.PI/2.4; g.scale.setScalar(0.65); return g;
     }
 
     function buildSuction() {
-      const g = new THREE.Group();
-      const gr = new THREE.Mesh(cyl(6, 5, 30, 12), MAT.white()); gr.position.y = -42; g.add(gr);
-      const tr = new THREE.Mesh(new THREE.TorusGeometry(8, 1.2, 8, 16, Math.PI * 0.6), MAT.darkSteel());
-      tr.position.set(0, -40, 0); tr.rotation.z = -Math.PI * 0.15; g.add(tr);
-      [[MAT.teal(), -28], [MAT.red(), -20]].forEach(([mat, y]) => {
-        const b = new THREE.Mesh(new THREE.CylinderGeometry(2, 2, 7, 12), mat);
-        b.position.set(5, y, 0); b.rotation.z = Math.PI / 2; g.add(b);
+      var g  = new THREE.Group();
+      var gr = new THREE.Mesh(cyl(6,5,30,12),MAT.white());      gr.position.y  = -42; g.add(gr);
+      var tr = new THREE.Mesh(new THREE.TorusGeometry(8,1.2,8,16,Math.PI*0.6),MAT.darkSteel());
+      tr.position.set(0,-40,0); tr.rotation.z=-Math.PI*0.15; g.add(tr);
+      [[MAT.teal(),-28],[MAT.red(),-20]].forEach(function(arr) {
+        var b=new THREE.Mesh(new THREE.CylinderGeometry(2,2,7,12),arr[0]); b.position.set(5,arr[1],0); b.rotation.z=Math.PI/2; g.add(b);
       });
-      const hub = new THREE.Mesh(cyl(5, 4, 10, 24), MAT.darkSteel()); hub.position.y = -12; g.add(hub);
-      const ca  = new THREE.Mesh(cyl(2.2, 2.2, 65), MAT.steel()); ca.position.y = 10; g.add(ca);
-      const tb  = new THREE.Mesh(cyl(1.2, 1.2, 14), MAT.teal());
-      tb.rotation.z = Math.PI / 2; tb.position.set(12, -16, 0); g.add(tb);
-      const tip = new THREE.Mesh(cyl(2.2, 0, 5), MAT.steel()); tip.position.y = 44; g.add(tip);
-      g.rotation.x = Math.PI / 2.4; g.scale.setScalar(0.65); return g;
+      var hub = new THREE.Mesh(cyl(5,4,10,24),MAT.darkSteel()); hub.position.y = -12; g.add(hub);
+      var ca  = new THREE.Mesh(cyl(2.2,2.2,65),MAT.steel());    ca.position.y  =  10; g.add(ca);
+      var tb  = new THREE.Mesh(cyl(1.2,1.2,14),MAT.teal());     tb.rotation.z  = Math.PI/2; tb.position.set(12,-16,0); g.add(tb);
+      var tip = new THREE.Mesh(cyl(2.2,0,5),MAT.steel());       tip.position.y =  44; g.add(tip);
+      g.rotation.x = Math.PI/2.4; g.scale.setScalar(0.65); return g;
     }
 
-    const TOOLS = {
-      trocar:  { build: buildTrocar,       icon: 'fa-syringe', label: 'Trocar'        },
-      needle:  { build: buildNeedleDriver, icon: 'fa-scalpel', label: 'Needle Driver' },
-      suction: { build: buildSuction,      icon: 'fa-droplet', label: 'Suction'       },
+    var TOOLS = {
+      trocar:  { build:buildTrocar,       icon:'fa-syringe', label:'Trocar'        },
+      needle:  { build:buildNeedleDriver, icon:'fa-scalpel', label:'Needle Driver' },
+      suction: { build:buildSuction,      icon:'fa-droplet', label:'Suction'       },
     };
 
     function spawnTool(name) {
@@ -980,30 +793,32 @@
       activeToolName = name;
       activeTool     = TOOLS[name].build();
       scene.add(activeTool);
-      const lbl = document.getElementById('tool-label');
+      var lbl = document.getElementById('tool-label');
       if (lbl) lbl.textContent = TOOLS[name].label;
-      addLog(`Instrument loaded: ${TOOLS[name].label}`, 'info');
-      document.querySelectorAll('.tool-btn').forEach(b => b.classList.toggle('active', b.dataset.tool === name));
+      addLog('Instrument loaded: ' + TOOLS[name].label, 'info');
+      document.querySelectorAll('.tool-btn').forEach(function(b) {
+        b.classList.toggle('active', b.dataset.tool === name);
+      });
     }
 
     function buildToolSelector() {
-      const existing = document.getElementById('tool-selector');
+      var existing = document.getElementById('tool-selector');
       if (existing) existing.remove();
-      const vp  = document.getElementById('tool-viewport');
-      const sel = document.createElement('div');
+      var vp  = document.getElementById('tool-viewport');
+      var sel = document.createElement('div');
       sel.id = 'tool-selector';
-      Object.entries(TOOLS).forEach(([key, cfg]) => {
-        const btn = document.createElement('button');
+      Object.keys(TOOLS).forEach(function(key) {
+        var cfg = TOOLS[key];
+        var btn = document.createElement('button');
         btn.className    = 'tool-btn';
         btn.dataset.tool = key;
-        btn.innerHTML    = `<i class="fa-solid ${cfg.icon}"></i>${cfg.label}`;
-        btn.onclick      = () => spawnTool(key);
+        btn.innerHTML    = '<i class="fa-solid ' + cfg.icon + '"></i>' + cfg.label;
+        btn.onclick      = function() { spawnTool(key); };
         sel.appendChild(btn);
       });
       vp.appendChild(sel);
     }
 
-    // Boot both engines
     initToolViewport();
   </script>
 </body>

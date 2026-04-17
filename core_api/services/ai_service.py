@@ -79,54 +79,71 @@ class AIService:
 
         anomalies = []
         for pred in predictions:
-            # Map workflow coords to 3D space (-10 to 10)
-            width = main_node.get("image", {}).get("width", 640)
-            height = main_node.get("image", {}).get("height", 480)
-            
-            x_norm = (pred["x"] / width) * 20 - 10
-            y_norm = (pred["y"] / height) * 20 - 10
-            
+            img_w = main_node.get("image", {}).get("width",  640)
+            img_h = main_node.get("image", {}).get("height", 480)
+
+            # Roboflow returns center x,y + width + height in original-image pixels
+            cx  = float(pred.get("x",     0))
+            cy  = float(pred.get("y",     0))
+            bw  = float(pred.get("width", img_w * 0.15))
+            bh  = float(pred.get("height", img_h * 0.12))
+
             anomalies.append({
-                "label": pred["class"],
-                "confidence": pred["confidence"],
-                "x": round(x_norm, 2),
-                "y": round(y_norm, 2),
-                "z": 10.0,
-                "description": f"Clinical Target: {pred['class']} ({round(pred['confidence']*100)}%)"
+                "label":       pred["class"],
+                "confidence":  round(float(pred["confidence"]), 3),
+                # Bounding box top-left + size in ORIGINAL image pixels
+                "bbox": [
+                    round(cx - bw / 2, 1),   # x_left
+                    round(cy - bh / 2, 1),   # y_top
+                    round(bw, 1),             # width
+                    round(bh, 1),             # height
+                ],
+                # Original image dimensions so the canvas can scale correctly
+                "img_w": img_w,
+                "img_h": img_h,
+                "description": (
+                    f"Clinical Target: {pred['class']} "
+                    f"({round(float(pred['confidence'])*100)}% confidence)"
+                ),
             })
-            
+
         return {
-            "success": True,
+            "success":   True,
             "anomalies": anomalies,
-            "count": len(anomalies)
+            "count":     len(anomalies),
         }
 
     @staticmethod
     def apply_clinical_fallback():
-        """Primary Clinical Failure State: Return critical markers to ensure surgical rehearsal can proceed"""
+        """Primary Clinical Failure State: Return critical markers in bbox pixel format"""
+        # Using a standard 640×480 reference frame for the fallback markers
+        W, H = 640, 480
         anomalies = [
             {
                 "label": "Placenta Previa (Grade III)",
                 "confidence": 0.94,
-                "x": 3.2, "y": -4.5, "z": 10.0,
-                "description": "CRITICAL: Placenta partially covering the internal cervical os. Immediate surgical planning required."
+                "bbox": [W*0.55, H*0.52, W*0.22, H*0.18],
+                "img_w": W, "img_h": H,
+                "description": "CRITICAL: Placenta partially covering the internal cervical os. Immediate surgical planning required.",
             },
             {
                 "label": "Fetal Growth Restriction (IUGR)",
                 "confidence": 0.82,
-                "x": -5.1, "y": 2.8, "z": 10.0,
-                "description": "OBSERVATION: Abdominal circumference < 10th percentile for gestational age."
+                "bbox": [W*0.18, H*0.30, W*0.20, H*0.16],
+                "img_w": W, "img_h": H,
+                "description": "OBSERVATION: Abdominal circumference < 10th percentile for gestational age.",
             },
             {
                 "label": "Umbilical Cord Insertion Risk",
                 "confidence": 0.76,
-                "x": 0.0, "y": -1.2, "z": 10.0,
-                "description": "WARNING: Marginal cord insertion noted at placental edge."
-            }
+                "bbox": [W*0.38, H*0.44, W*0.16, H*0.14],
+                "img_w": W, "img_h": H,
+                "description": "WARNING: Marginal cord insertion noted at placental edge.",
+            },
         ]
         return {
             "success": True,
             "anomalies": anomalies,
             "count": len(anomalies),
-            "fallback_used": True
+            "fallback_used": True,
         }
