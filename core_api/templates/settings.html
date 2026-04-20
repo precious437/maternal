@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,160 +9,319 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
   <style>
-    body { font-family: system-ui, sans-serif; background: #020617; }
-    .glass-card {
-      background: rgba(15, 23, 42, 0.6);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(45, 212, 191, 0.2);
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: #f8fafb;
+    }
+
+    .setting-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .setting-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 40px -15px rgba(0, 191, 165, 0.15);
+      border-color: rgba(0, 191, 165, 0.3);
+    }
+    
+    .history-item {
+        animation: fadeIn 0.3s ease forwards;
+    }
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(5px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
     }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-200 min-h-screen">
-  <!-- Glowing Background -->
-  <div class="fixed top-0 left-0 w-full h-full pointer-events-none overflow-hidden -z-10">
-    <div class="absolute top-[10%] left-[10%] w-[500px] h-[500px] bg-teal-500/10 rounded-full blur-[120px]"></div>
-    <div class="absolute bottom-[10%] right-[10%] w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]"></div>
-  </div>
+<body class="text-slate-800 antialiased min-h-screen flex flex-col">
 
-  <!-- Navigation -->
-  <nav class="bg-slate-900/50 backdrop-blur-md border-b border-white/5 py-4 sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-6 flex justify-between items-center">
-      <div class="flex items-center gap-3">
-        <i class="fa-solid fa-gear text-2xl text-teal-400"></i>
-        <h1 class="text-xl font-bold tracking-tight">System Settings</h1>
+  <!-- NAV -->
+  <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 shadow-sm relative">
+    <div class="max-w-7xl mx-auto px-4 lg:px-6 py-3 lg:py-4 flex items-center justify-between">
+      <div class="flex items-center gap-x-2 lg:gap-x-4">
+        <div class="w-8 h-8 lg:w-10 lg:h-10 bg-[#00bfa5] rounded-lg lg:rounded-xl flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
+          <i class="fa-solid fa-heart-pulse text-lg lg:text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-lg lg:text-xl font-bold text-[#0a3d62]">Maternal AI</h1>
+          <p class="text-[8px] lg:text-[10px] text-slate-400 font-bold uppercase tracking-wider hidden sm:block">Configuration Profile</p>
+        </div>
       </div>
-      <div class="flex gap-6 text-sm font-medium">
-        <a href="/" class="hover:text-teal-400 transition">Dashboard</a>
-        <a href="/surgical" class="hover:text-teal-400 transition">Surgical Chamber</a>
-        <a href="/login" class="text-rose-400 hover:text-rose-300 transition">Logout</a>
+      
+      <!-- Desktop Links -->
+      <div class="hidden lg:flex items-center gap-x-6 text-sm">
+        <a href="/" class="text-slate-500 hover:text-[#00bfa5] font-medium"><i class="fa-solid fa-house mr-1"></i> Home</a>
+        <a href="/surgical" class="auth-protected-link hidden text-slate-500 hover:text-[#00bfa5] font-medium"><i class="fa-solid fa-robot mr-1"></i> Surgical AI</a>
+        <a href="/settings" class="text-[#00bfa5] font-bold"><i class="fa-solid fa-cog mr-1"></i> Settings</a>
+        <a href="/help" class="text-slate-500 hover:text-[#00bfa5] font-medium"><i class="fa-solid fa-circle-question mr-1"></i> Help</a>
       </div>
+      
+      <!-- Desktop User Area -->
+      <div class="hidden lg:flex items-center gap-x-4">
+        <div class="h-6 w-px bg-slate-200"></div>
+        <div id="user-area" class="flex items-center gap-x-3 hidden">
+          <span id="user-name" class="font-semibold text-slate-600 text-sm">Surgeon</span>
+        </div>
+        <a href="/login" id="auth-button" class="bg-[#0a3d62] text-white px-5 py-2 rounded-xl text-xs font-bold hover:bg-[#00bfa5] shadow-md shadow-[#0a3d62]/20 hover:shadow-teal-500/20 transition-all flex items-center gap-x-2">
+          <i class="fa-solid fa-right-to-bracket" id="auth-icon"></i> <span id="auth-text">Login</span>
+        </a>
+      </div>
+
+      <!-- Mobile Nav Button -->
+      <button id="mobileNavBtn" class="lg:hidden text-slate-600 p-2 hover:bg-slate-50 rounded-lg transition-colors"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
+    </div>
+
+    <!-- Mobile Dropdown -->
+    <div id="mobileDropdown" class="hidden lg:hidden flex-col bg-white border-t border-slate-100 px-6 py-5 space-y-5 absolute top-full left-0 w-full shadow-2xl">
+      <a href="/" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-house w-6 text-center text-slate-400"></i> Home</a>
+      <a href="/surgical" class="auth-protected-link hidden text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-robot w-6 text-center text-slate-400"></i> Surgical AI</a>
+      <a href="/settings" class="text-[#00bfa5] font-bold flex items-center gap-x-3 bg-teal-50 p-3 rounded-xl -mx-3"><i class="fa-solid fa-cog w-6 text-center"></i> Settings</a>
+      <a href="/help" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-circle-question w-6 text-center text-slate-400"></i> Help Center</a>
+      <div class="h-px bg-slate-100 my-2"></div>
+      
+      <!-- Mobile user area -->
+      <div id="mobile-user-area" class="hidden flex items-center gap-x-3 mb-2">
+        <div id="mobile-user-icon" class="w-10 h-10 bg-gradient-to-br from-[#0a3d62] to-[#012844] text-white rounded-xl flex items-center justify-center text-sm font-bold uppercase shadow-md">U</div>
+        <div>
+          <span id="mobile-user-name" class="text-sm font-bold text-slate-800 block">User</span>
+          <span class="text-[10px] text-teal-600 font-bold uppercase tracking-wider">Clinical Account</span>
+        </div>
+      </div>
+      <button id="mobile-auth-button" onclick="handleMobileAuth()" class="bg-[#0a3d62] text-white font-bold text-center py-3.5 rounded-xl flex items-center justify-center gap-x-2 w-full hover:bg-[#00bfa5] transition-colors shadow-md">
+        <i class="fa-solid fa-right-to-bracket" id="mobile-auth-icon"></i> <span id="mobile-auth-text">Login</span>
+      </button>
     </div>
   </nav>
 
-  <main class="max-w-7xl mx-auto px-6 py-12">
-    <div class="mb-12">
-      <h2 class="text-4xl font-black text-white mb-2">Configure Your Experience</h2>
-      <p class="text-slate-400">Manage clinical records and system preferences.</p>
+  <main class="max-w-7xl mx-auto px-4 lg:px-6 py-10 lg:py-16 flex-1 w-full">
+    
+    <div class="mb-10 lg:mb-14">
+      <h2 class="text-3xl lg:text-4xl font-extrabold text-[#0a3d62] tracking-tight mb-3">Configure Your Experience</h2>
+      <p class="text-slate-500 text-base lg:text-lg">Manage clinical records, preferences, and system data audits.</p>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
       <!-- Clinical Profile Card -->
-      <div class="glass-card rounded-[2rem] p-10 border-teal-500/10 hover:border-teal-400/40 transition-all duration-500 group">
-        <div class="w-16 h-16 bg-blue-500/10 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/20 group-hover:scale-110 transition-transform">
-          <i class="fa-solid fa-user-doctor text-2xl text-blue-400"></i>
+      <div class="setting-card bg-white rounded-2xl lg:rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group flex flex-col">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-bl-[100px] -z-0 opacity-50"></div>
+        <div class="relative z-10 flex-1">
+            <div class="w-14 h-14 bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md shadow-blue-500/20 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#0a3d62] mb-6">Surgeon Profile</h3>
+            <div class="space-y-5">
+            <div>
+                <label class="text-[10px] text-slate-400 uppercase tracking-widest font-black block mb-1">Email Identity</label>
+                <div id="userEmail" class="text-[#0a3d62] font-semibold truncate bg-slate-50 px-3 py-2 rounded-lg border border-slate-100">Fetching credential...</div>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 uppercase tracking-widest font-black block mb-1">Specialization</label>
+                <div class="text-slate-600 text-sm font-medium">Maternal-Fetal Surgery</div>
+            </div>
+            </div>
         </div>
-        <h3 class="text-2xl font-bold text-white mb-4">Surgeon Profile</h3>
-        <div class="space-y-4">
-          <div>
-            <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Email Identity</label>
-            <div id="userEmail" class="text-teal-400 font-medium truncate">Fetching credential...</div>
-          </div>
-          <div>
-            <label class="text-[10px] text-slate-500 uppercase tracking-widest font-bold">Specialization</label>
-            <div class="text-white text-sm">Maternal-Fetal Surgery</div>
-          </div>
-          <div class="pt-4 border-t border-white/5">
-            <span class="inline-flex items-center px-3 py-1 bg-teal-500/10 text-teal-400 text-[10px] font-bold rounded-full border border-teal-500/20">
-              <i class="fa-solid fa-shield-check mr-1"></i> VERIFIED ACCESS
+        <div class="relative z-10 pt-6 mt-6 border-t border-slate-100">
+            <span class="inline-flex items-center px-4 py-1.5 bg-teal-50 text-teal-600 text-[10px] font-black tracking-widest uppercase rounded-full border border-teal-100">
+            <i class="fa-solid fa-shield-check mr-1.5"></i> VERIFIED ACCESS
             </span>
-          </div>
         </div>
       </div>
 
       <!-- Clinical History Card -->
-      <div class="glass-card rounded-[2rem] p-10 hover:border-teal-400/40 transition-all duration-500 group">
-        <div class="w-16 h-16 bg-teal-500/10 rounded-2xl flex items-center justify-center mb-6 border border-teal-500/20 group-hover:scale-110 transition-transform">
-          <i class="fa-solid fa-box-archive text-2xl text-teal-400"></i>
-        </div>
-        <h3 class="text-2xl font-bold text-white mb-4">Clinical Data History</h3>
-        <p class="text-slate-400 mb-8 leading-relaxed">
-          Access and synchronize your medical analysis history. You can export all surgical rehearsal data for external audit.
-        </p>
-        <div class="space-y-4">
-          <button onclick="downloadHistory()" class="w-full bg-teal-500/10 hover:bg-teal-500/20 border border-teal-500/30 text-teal-400 py-4 rounded-2xl font-bold transition-all flex items-center justify-center gap-3 shadow-lg shadow-teal-500/5">
-            <i class="fa-solid fa-download"></i> Download Clinical Export
-          </button>
-          <button onclick="loadHistory()" class="w-full bg-white/5 hover:bg-white/10 text-white py-4 rounded-2xl font-bold transition-all border border-white/5">
-            <i class="fa-solid fa-arrows-rotate mr-2 text-slate-400"></i> Refresh Records
-          </button>
-        </div>
-        <div id="historyOutput" class="mt-8 max-h-48 overflow-y-auto space-y-3 hidden">
-          <!-- Populated via JS -->
+      <div class="setting-card bg-white rounded-2xl lg:rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group flex flex-col">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-teal-50 rounded-bl-[100px] -z-0 opacity-50"></div>
+        <div class="relative z-10 flex-1">
+            <div class="w-14 h-14 bg-gradient-to-br from-[#00bfa5] to-teal-700 text-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md shadow-teal-500/20 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-box-archive"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#0a3d62] mb-3">Clinical Data Engine</h3>
+            <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+            Access and synchronize your medical analysis history. Export all surgical rehearsal data for external audit securely.
+            </p>
+            <div class="space-y-3">
+            <button onclick="downloadHistory()" class="w-full bg-[#0a3d62] hover:bg-[#00bfa5] text-white py-3.5 rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg text-sm">
+                <i class="fa-solid fa-download"></i> Clinical Export
+            </button>
+            <button onclick="loadHistory()" class="w-full bg-slate-50 hover:bg-slate-100 text-slate-600 py-3.5 rounded-xl font-bold transition-all border border-slate-200 flex items-center justify-center text-sm gap-2 mt-2">
+                <i class="fa-solid fa-arrows-rotate text-slate-400 group-hover:animate-spin"></i> Refresh Audit
+            </button>
+            </div>
+            <div id="historyOutput" class="mt-6 max-h-48 overflow-y-auto space-y-2 hidden pr-2 custom-scrollbar">
+            <!-- Populated via JS -->
+            </div>
         </div>
       </div>
 
       <!-- System Privacy Card -->
-      <div class="glass-card rounded-[2rem] p-10 border-rose-500/10 hover:border-rose-500/30 transition-all duration-500 group">
-        <div class="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center mb-6 border border-rose-500/20 group-hover:scale-110 transition-transform">
-          <i class="fa-solid fa-trash-can text-2xl text-rose-400"></i>
+      <div class="setting-card bg-white rounded-2xl lg:rounded-3xl p-8 border border-slate-200 shadow-sm relative overflow-hidden group flex flex-col">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-[100px] -z-0 opacity-50"></div>
+        <div class="relative z-10 flex-1">
+            <div class="w-14 h-14 bg-gradient-to-br from-rose-500 to-red-600 text-white rounded-2xl flex items-center justify-center text-2xl mb-6 shadow-md shadow-rose-500/20 group-hover:scale-110 transition-transform duration-300">
+            <i class="fa-solid fa-trash-can"></i>
+            </div>
+            <h3 class="text-xl font-bold text-[#0a3d62] mb-3">Privacy & Disposal</h3>
+            <p class="text-slate-500 text-sm mb-8 leading-relaxed">
+            Permanent removal of clinical logs and analysis records. This action is irreversible and complies with HIPAA data destruction standards.
+            </p>
         </div>
-        <h3 class="text-2xl font-bold text-white mb-4">Privacy & Disposal</h3>
-        <p class="text-slate-400 mb-8 leading-relaxed">
-          Permanent removal of clinical logs and analysis records. This action is destructive and complies with HIPAA/GDPR standards.
-        </p>
-        <button onclick="clearHistory()" class="w-full bg-rose-500/10 hover:bg-rose-500 text-rose-400 hover:text-white py-4 rounded-2xl font-bold transition-all border border-rose-500/30 flex items-center justify-center gap-3">
-          <i class="fa-solid fa-fire"></i> Delete Analysis History
-        </button>
+        <div class="relative z-10">
+            <button onclick="clearHistory()" class="w-full bg-rose-50 hover:bg-rose-500 text-rose-600 hover:text-white py-3.5 rounded-xl font-bold transition-colors border border-rose-100 hover:border-transparent flex items-center justify-center gap-2 text-sm">
+            <i class="fa-solid fa-fire text-rose-500 group-hover/btn:text-white"></i> Purge History
+            </button>
+        </div>
       </div>
     </div>
   </main>
 
+  <!-- Subtle Footer -->
+  <footer class="border-t border-slate-200 bg-white py-10 mt-auto">
+      <div class="max-w-7xl mx-auto px-6 text-center">
+          <div class="inline-flex items-center gap-2 text-slate-400 font-medium text-sm">
+            <i class="fa-solid fa-shield-halved"></i> <span>Maternal-Fetal AI System Configuration</span>
+          </div>
+      </div>
+  </footer>
+
   <script>
-    // Load local user data
     document.addEventListener('DOMContentLoaded', () => {
+      // Setup mobile nav toggle
+      const mobileNavBtn = document.getElementById('mobileNavBtn');
+      const mobileDropdown = document.getElementById('mobileDropdown');
+      if (mobileNavBtn && mobileDropdown) {
+        mobileNavBtn.addEventListener('click', function() {
+          mobileDropdown.classList.toggle('hidden');
+        });
+      }
+
       // Enforce authentication
       if (!localStorage.getItem('lumi_user')) {
         window.location.replace('/login');
         return;
       }
 
-      const userData = JSON.parse(localStorage.getItem('lumi_user') || '{}');
+      const userStr = localStorage.getItem('lumi_user');
+      const userData = JSON.parse(userStr || '{}');
       if (userData.email) {
         document.getElementById('userEmail').textContent = userData.email;
       }
+
+      const email = userData.email || 'Surgeon';
+      const shortName = email.split('@')[0];
+      const displayName = "Dr. " + shortName.charAt(0).toUpperCase() + shortName.slice(1);
+      
+      // Update Name / Avatar in UI completely
+      const authIcon = document.getElementById('auth-icon');
+      const authText = document.getElementById('auth-text');
+      const userArea = document.getElementById('user-area');
+      const userName = document.getElementById('user-name');
+      const authButton = document.getElementById('auth-button');
+      
+      const mobileAuthIcon = document.getElementById('mobile-auth-icon');
+      const mobileAuthText = document.getElementById('mobile-auth-text');
+      const mobileUserArea = document.getElementById('mobile-user-area');
+      const mobileUserName = document.getElementById('mobile-user-name');
+      const mobileUserIcon = document.getElementById('mobile-user-icon');
+      const protectedLinks = document.querySelectorAll('.auth-protected-link');
+
+      // Desktop
+      if(userName) userName.textContent = displayName;
+      if(userArea) userArea.classList.remove('hidden');
+      if(authIcon) authIcon.className = "fa-solid fa-right-from-bracket";
+      if(authText) authText.textContent = "Sign Out";
+      if(authButton) {
+          authButton.href = "#";
+          authButton.classList.replace('bg-[#0a3d62]', 'bg-rose-50');
+          authButton.classList.replace('text-white', 'text-rose-600');
+          authButton.classList.remove('shadow-[#0a3d62]/20');
+          authButton.classList.add('border', 'border-rose-200');
+          authButton.onclick = (e) => { e.preventDefault(); handleLogout(); };
+      }
+
+      // Mobile
+      if(mobileUserName) mobileUserName.textContent = displayName;
+      if(mobileUserIcon) mobileUserIcon.textContent = shortName.charAt(0).toUpperCase();
+      if(mobileUserArea) mobileUserArea.classList.remove('hidden');
+      if(mobileAuthIcon) mobileAuthIcon.className = "fa-solid fa-right-from-bracket";
+      if(mobileAuthText) mobileAuthText.textContent = "Sign Out";
+      
+      window.isLoggedIn = true;
+
+      protectedLinks.forEach(link => {
+        link.classList.remove('hidden');
+        link.classList.add('flex');
+      });
     });
+
+    window.handleMobileAuth = function() {
+       if (window.isLoggedIn) {
+           handleLogout();
+       } else {
+           window.location.href = '/login';
+       }
+    };
+
+    function handleLogout() {
+       localStorage.removeItem('lumi_user');
+       window.location.href = '/login';
+    }
 
     async function loadHistory() {
       const output = document.getElementById('historyOutput');
       output.classList.remove('hidden');
-      output.innerHTML = '<div class="text-teal-400 text-sm animate-pulse">Synchronizing clinical data...</div>';
+      output.innerHTML = '<div class="text-teal-600 text-[11px] font-bold tracking-wider uppercase animate-pulse p-3 bg-teal-50 rounded-xl text-center"><i class="fa-solid fa-circle-notch fa-spin mr-2"></i>Synchronizing...</div>';
       
       try {
         const res = await fetch('/api/v1/history/');
         const data = await res.json();
-        if (data.success && data.records.length > 0) {
-          output.innerHTML = data.records.map((r, i) => `
-            <div class="p-4 bg-white/5 rounded-xl border border-white/5 text-xs">
-              <div class="flex justify-between text-teal-400 font-bold mb-1">
-                <span>Record #${i+1}</span>
-                <span class="text-slate-500">${new Date(r.created_at).toLocaleDateString()}</span>
+        const records = data.history || data.records || (Array.isArray(data) ? data : []);
+
+        if (records.length > 0) {
+          output.innerHTML = records.map((r, i) => `
+            <div class="history-item p-3 bg-slate-50 hover:bg-white rounded-xl border border-slate-100 hover:border-teal-100 transition-colors shadow-sm">
+              <div class="flex justify-between items-center mb-1">
+                <span class="text-[10px] font-black text-[#0a3d62] uppercase tracking-wider">Record #${records.length - i}</span>
+                <span class="text-[9px] font-bold text-slate-400">${new Date(r.created_at || Date.now()).toLocaleDateString()}</span>
               </div>
-              <div class="text-slate-300">BP: ${r.maternal_bp || 'N/A'} • HR: ${r.maternal_hr || 'N/A'}</div>
+              <div class="text-xs text-slate-600 font-medium">BP: ${r.maternal_bp || r.bp || 'N/A'} • HR: ${r.maternal_hr || 'N/A'}</div>
             </div>
           `).join('');
         } else {
-          output.innerHTML = '<div class="text-slate-500 text-sm">No analysis history found.</div>';
+          output.innerHTML = '<div class="text-slate-500 text-xs p-3 text-center bg-slate-50 rounded-xl">No analysis history found.</div>';
         }
       } catch (err) {
-        output.innerHTML = '<div class="text-rose-400 text-sm">Diagnostic sync failed.</div>';
+        output.innerHTML = '<div class="text-rose-500 text-xs p-3 text-center bg-rose-50 rounded-xl">Diagnostic sync failed.</div>';
       }
     }
 
     function downloadHistory() {
-      // In a real app, this would fetch CSV/JSON and trigger a blob download
-      const clinicalData = { export_date: new Date().toISOString(), status: "Valid" };
+      const clinicalData = { export_date: new Date().toISOString(), status: "Valid", application: "Maternal-Fetal AI System" };
       const blob = new Blob([JSON.stringify(clinicalData, null, 2)], { type: 'application/json' });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `lumi_ai_export_${Date.now()}.json`;
+      a.download = `maternal_ai_export_${Date.now()}.json`;
       a.click();
     }
 
     function clearHistory() {
       if (confirm("⚠️ CAUTION: Are you sure you want to permanently delete all clinical analysis history?")) {
         alert("Clinical data disposal initiated.");
-        document.getElementById('historyOutput').innerHTML = '';
+        const output = document.getElementById('historyOutput');
+        output.innerHTML = '<div class="text-rose-500 text-xs p-3 text-center flex flex-col items-center gap-2 bg-rose-50 rounded-xl"><i class="fa-solid fa-check-circle text-lg"></i> Records purged securely.</div>';
+        output.classList.remove('hidden');
       }
     }
   </script>

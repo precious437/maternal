@@ -7,9 +7,6 @@
   <title>Surgical AI Chamber - Maternal-Fetal System</title>
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='20' fill='%2300bfa5'/%3E%3Ctext x='50' y='72' font-family='sans-serif' font-weight='bold' font-size='60' fill='white' text-anchor='middle'%3EM%3C/text%3E%3C/svg%3E">
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
-  <!-- Medical Imaging Headers: VTK, Cornerstone, ITK-Wasm -->
-  <script src="https://unpkg.com/vtk.js@28.6.0/dist/vtk.js"></script>
   <script src="https://unpkg.com/cornerstone-core@2.3.0/dist/cornerstone.js"></script>
   <script src="https://unpkg.com/cornerstone-wado-image-loader@3.3.2/dist/cornerstoneWADOImageLoader.bundle.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -27,14 +24,26 @@
       border: 1px solid rgba(0,191,165,0.2);
       position: relative;
     }
-    @media (max-width:1024px) { #stage-container { height: auto; flex-direction: column; } }
+    @media (max-width:1024px) { 
+      #stage-container { height: auto; flex-direction: column; }
+      #scan-panel { min-height: 450px; }
+    }
+    @media (max-width:640px) {
+      #stage-container { border-radius: 1.5rem; }
+      #scan-panel { min-height: 380px; }
+      #log-toggle-btn { top: auto !important; bottom: 10px !important; right: 10px !important; left: auto !important; padding: 4px 10px; font-size: 0.5rem; }
+      #hud-overlay { top: 10px; left: 10px; padding: 4px 8px; font-size: 0.5rem; border-width: 2px; }
+      #conf-badge { top: 38px; left: 10px; right: auto; padding: 4px 8px; font-size: 0.5rem; }
+      #tool-dock { bottom: 10px; left: 10px; transform: none; gap: 4px; padding: 4px; width: auto; }
+      .tool-tab { width: 34px; height: 34px; font-size: 0.85rem; border-radius: 0.75rem; }
+    }
 
-    /* ── Left: Intelligent Scan Terminal ───────────────────────── */
+    /* ── Intelligent Scan Terminal ───────────────────────── */
     #scan-panel {
-      flex: 1 1 50%; position: relative;
+      flex: 1; position: relative;
       background: #000;
-      border-right: 1px solid rgba(0,191,165,0.15);
       overflow: hidden;
+      width: 100%;
     }
     #scan-img {
       display: block; width: 100%; height: 100%; object-fit: contain;
@@ -51,14 +60,6 @@
       position:absolute; top:0; left:0; width:100%; height:100%;
       pointer-events:none; z-index:10;
     }
-
-    /* ── Right: Digital Twin Viewport ─────────────────────────── */
-    #tool-viewport {
-      flex: 1 1 50%; position:relative;
-      background: radial-gradient(circle at center, #0a1729, #030d18);
-      overflow:hidden;
-    }
-    #tool-viewport canvas { display:block; width:100% !important; height:100% !important; }
 
     /* ── Floating Clinical HUDs ────────────────────────────────── */
     .hud-pill {
@@ -93,45 +94,64 @@
     }
 
     #log-toggle-btn {
-      position:absolute; left:24px; bottom:24px;
+      position:absolute; right:24px; bottom:24px;
       padding:10px 22px; background:rgba(10, 23, 41, 0.8); color:#00bfa5;
       border:1px solid rgba(0,191,165,0.3);
       border-radius:3rem; font-weight:800; font-size:0.65rem;
       backdrop-filter: blur(10px); transition:all 0.3s; z-index:110;
       text-transform: uppercase; letter-spacing: 1px;
     }
+    @media (max-width:640px) {
+      #log-toggle-btn { right: 8px; bottom: 8px; top: auto; left: auto; padding: 4px 10px; font-size: 0.5rem; }
+    }
     #log-toggle-btn:hover { background: #00bfa5; color: #fff; }
 
     /* ── Clinical Log Slide-out ──────────────────────────────── */
     #clinical-log {
       position:absolute; right:20px; top:20px; bottom:20px; width:360px;
-      background:rgba(7, 17, 30, 0.95); border-radius:2rem;
-      border:1px solid rgba(0,191,165,0.25);
-      box-shadow: -20px 0 60px rgba(0,0,0,0.5);
-      padding:0; color:#fff; display:flex; flex-direction:column;
+      background:rgba(255, 255, 255, 0.98); border-radius:2rem;
+      border:1px solid rgba(0,191,165,0.15);
+      box-shadow: -20px 0 60px rgba(0,0,0,0.1);
+      padding:0; color:#1e293b; display:flex; flex-direction:column;
       backdrop-filter:blur(25px);
       transition:all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-      z-index:200; opacity:0; pointer-events:none; transform:translateX(100%);
-    }
-    #clinical-log.open { opacity:1; pointer-events:auto; transform:translateX(0); }
-    .log-header { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-    .log-entry.clinical {
-      background:rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
-      padding:12px; margin: 0 16px 10px 16px; border-radius:1rem;
+      z-index:205; opacity:0; pointer-events:none; transform:translateX(100%);
     }
     @media (max-width:768px) {
-      #clinical-log { left:10px; right:10px; bottom:10px; top:auto; width:auto; height:60vh;
-        transform:translateY(100%); border-radius:2rem 2rem 0 0; }
+      #clinical-log { 
+        left:0; right:0; bottom:0; top:auto; width:100%; height:55vh;
+        transform:translateY(100%); border-radius:3rem 3rem 0 0; 
+        box-shadow: 0 -20px 50px rgba(0,0,0,0.2);
+        border: none;
+        background: #ffffff;
+      }
     }
     #clinical-log.open { opacity:1; pointer-events:auto; transform:translateX(0); }
     @media (max-width:768px) { #clinical-log.open { transform:translateY(0); } }
+    
+    .log-handle {
+      width: 40px; height: 5px; background: #e2e8f0; border-radius: 10px;
+      margin: 12px auto 0 auto; display: none;
+    }
+    @media (max-width:768px) { .log-handle { display: block; } }
+
+    .log-header { padding: 20px; border-bottom: 1px solid rgba(0,0,0,0.05); }
     .log-entry.clinical {
       border-left:4px solid #00bfa5;
-      background:linear-gradient(to right,#f0fdfa,#ffffff);
-      padding:15px; margin-top:10px;
-      border-radius:0.5rem 1rem 1rem 0.5rem;
-      box-shadow:0 4px 6px -1px rgba(0,191,165,0.1);
+      background: #f8fafc;
+      padding:15px; margin: 10px 16px 0 16px;
+      border-radius:1rem;
+      box-shadow:0 1px 3px rgba(0,0,0,0.05);
+      color: #334155;
     }
+
+    /* ── Log Overlay Backdrop ──────────────────────────────── */
+    #log-backdrop {
+      position: fixed; inset: 0; background: rgba(10, 23, 41, 0.4);
+      backdrop-filter: blur(4px); z-index: 190; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    #log-backdrop.open { opacity: 1; pointer-events: auto; }
 
     /* ── Console cards ──────────────────────────────────────── */
     .console-card {
@@ -152,6 +172,7 @@
   </style>
 </head>
 <body class="bg-[#f8fafb] text-slate-800">
+  <div id="log-backdrop" onclick="toggleLog()"></div>
 
   <!-- NAV -->
   <nav class="bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-50 shadow-sm">
@@ -166,9 +187,10 @@
         </div>
       </div>
       <div class="hidden lg:flex items-center gap-x-6 text-sm">
-        <a href="/surgical" class="text-[#00bfa5] font-bold"><i class="fa-solid fa-robot mr-1"></i> Surgical</a>
-        <a href="/settings" class="text-slate-500 hover:text-[#00bfa5]"><i class="fa-solid fa-cog mr-1"></i> Settings</a>
-        <a href="/help" class="text-slate-500 hover:text-[#00bfa5]"><i class="fa-solid fa-circle-question mr-1"></i> Help</a>
+        <a href="/" class="text-slate-500 hover:text-[#00bfa5] font-medium"><i class="fa-solid fa-house mr-1"></i> Home</a>
+        <a href="/surgical" class="text-[#00bfa5] font-bold"><i class="fa-solid fa-robot mr-1"></i> Surgical AI</a>
+        <a href="/settings" class="text-slate-500 hover:text-[#00bfa5] font-medium"><i class="fa-solid fa-cog mr-1"></i> Settings</a>
+        <a href="/help" class="text-slate-500 hover:text-[#00bfa5] font-medium"><i class="fa-solid fa-circle-question mr-1"></i> Help</a>
         <div class="h-6 w-px bg-slate-200"></div>
         <div class="flex items-center gap-x-3">
           <span id="user-name" class="font-semibold text-slate-600">Surgeon</span>
@@ -177,12 +199,13 @@
       </div>
       <button id="mobileNavBtn" class="lg:hidden text-slate-600 p-2"><i class="fa-solid fa-bars-staggered text-xl"></i></button>
     </div>
-    <div id="mobileDropdown" class="hidden lg:hidden flex-col bg-white border-t border-slate-100 px-6 py-5 space-y-5 absolute top-full left-0 w-full shadow-xl">
-      <a href="/surgical" class="text-[#00bfa5] font-bold flex items-center gap-x-3"><i class="fa-solid fa-robot w-6"></i> Surgical AI</a>
-      <a href="/settings" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-cog w-6"></i> Settings</a>
-      <a href="/help" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-circle-question w-6"></i> Help</a>
+    <div id="mobileDropdown" class="hidden lg:hidden flex-col bg-white border-t border-slate-100 px-6 py-5 space-y-5 absolute top-full left-0 w-full shadow-2xl z-[100]">
+      <a href="/" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-house w-6 text-center text-slate-400"></i> Home</a>
+      <a href="/surgical" class="text-[#00bfa5] font-bold flex items-center gap-x-3 bg-teal-50 p-3 rounded-xl -mx-3"><i class="fa-solid fa-robot w-6 text-center text-[#00bfa5]"></i> Surgical AI</a>
+      <a href="/settings" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-cog w-6 text-center text-slate-400"></i> Settings</a>
+      <a href="/help" class="text-slate-700 font-medium hover:text-[#00bfa5] flex items-center gap-x-3"><i class="fa-solid fa-circle-question w-6 text-center text-slate-400"></i> Help</a>
       <div class="h-px bg-slate-100 my-2"></div>
-      <button onclick="logoutUser()" class="bg-[#0a3d62] text-white font-bold text-center py-4 rounded-2xl flex items-center justify-center gap-x-2">
+      <button onclick="logoutUser()" class="bg-[#0a3d62] text-white hover:bg-[#00bfa5] font-bold text-center py-3.5 rounded-xl flex items-center justify-center gap-x-2 shadow-md">
         <i class="fa-solid fa-right-from-bracket"></i> Logout
       </button>
     </div>
@@ -219,6 +242,7 @@
 
             <!-- Slide-out Log -->
             <div id="clinical-log">
+              <div class="log-handle"></div>
               <div class="log-header flex justify-between items-center">
                 <div>
                   <span class="text-[10px] font-black uppercase text-teal-500 tracking-widest block">Clinical Path</span>
@@ -232,24 +256,6 @@
             </div>
           </div>
 
-          <!-- 3-D TOOL VIEWPORT -->
-          <div id="tool-viewport"></div>
-
-        </div>
-
-        <div class="mt-4 lg:mt-6 flex flex-col sm:flex-row items-center justify-between p-4 lg:p-6 bg-white rounded-3xl border border-slate-100 shadow-sm">
-          <div class="flex items-center gap-4 mb-4 sm:mb-0">
-            <div class="w-10 h-10 lg:w-12 lg:h-12 bg-teal-50 rounded-2xl flex items-center justify-center text-[#00bfa5]">
-              <i class="fa-solid fa-wand-sparkles text-xl lg:text-2xl"></i>
-            </div>
-            <div>
-              <h4 class="font-bold text-sm lg:text-base text-slate-800">Adaptive Digital Twin</h4>
-              <p class="text-[10px] lg:text-xs text-slate-400">Rehearsal state generated from telemetry</p>
-            </div>
-          </div>
-          <div class="flex gap-2">
-            <span class="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[9px] lg:text-[10px] font-bold">READY FOR REHEARSAL</span>
-          </div>
         </div>
       </div>
 
@@ -262,7 +268,7 @@
             <div class="step-indicator">1</div>
             <div><h3 class="font-bold text-slate-800">Telemetry</h3><p class="text-[10px] text-slate-400">Patient Vitals</p></div>
           </div>
-          <div class="grid grid-cols-2 gap-3 mb-4">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
             <div class="bg-slate-50 p-3 rounded-2xl border border-slate-100">
               <label class="text-[9px] font-black uppercase text-slate-400 block mb-1">BP (mmHg)</label>
               <input type="text" id="bp" value="120/80" class="w-full bg-transparent border-none text-slate-700 font-bold focus:ring-0 p-0 text-sm">
@@ -342,7 +348,10 @@
     });
 
     // ── Logging ───────────────────────────────────────────────────────────
-    function toggleLog() { document.getElementById('clinical-log').classList.toggle('open'); }
+    function toggleLog() { 
+      document.getElementById('clinical-log').classList.toggle('open'); 
+      document.getElementById('log-backdrop').classList.toggle('open'); 
+    }
 
     function addLog(msg, type) {
       const c    = document.getElementById('log-content');
@@ -420,7 +429,7 @@
           var ai = data.digital_twin || data.analysis_results;
           if (ai && ai.success) {
             renderClinicalReport(ai);
-            window.syncDigitalTwin(ai.anomalies);
+            if (ai.anomalies) syncScanDetections(ai.anomalies);
           }
           addLog('Analysis complete. ' + (ai ? (ai.count || 0) + ' finding(s) detected.' : 'No findings.'), 'success');
           
@@ -547,7 +556,7 @@
       var ai = item.analysis_results;
       if (ai && ai.success) {
         renderClinicalReport(ai);
-        if (ai.anomalies) window.syncDigitalTwin(ai.anomalies);
+        if (ai.anomalies) syncScanDetections(ai.anomalies);
       }
     }
 
@@ -572,7 +581,7 @@
         try {
           const f = JSON.parse(findings);
           renderClinicalReport(f);
-          if (f.anomalies) window.syncDigitalTwin(f.anomalies);
+          if (f.anomalies) syncScanDetections(f.anomalies);
         } catch(e) {}
       }
     }
@@ -835,57 +844,15 @@
         };
         scanImg.src = url; scanImg.crossOrigin = 'anonymous';
       }
-
-      // 2. Update 3D Womb Internal Plane (Phase 3: Volumetric Reconstructor)
-      if (scanPlane3D) {
-        var loader = new THREE.TextureLoader();
-        loader.load(url, function(tex) {
-           // Standard 2D slice mapping
-           scanPlane3D.material.map = tex;
-           scanPlane3D.material.needsUpdate = true;
-           scanPlane3D.visible = true;
-           
-           if (isDicom && meta.pixels) {
-             // ── Phase 3: Volumetric Stack Generation ───────────
-             // We clear old layers and build a "Thick Voxel Stack"
-             if (window.voxelStack) {
-               window.voxelStack.forEach(function(l) { world.remove(l); });
-             }
-             window.voxelStack = [];
-             
-             // Create 5 layers of "Atmospheric Depth" to simulate volume
-             for (var i = -2; i <= 2; i++) {
-               if (i === 0) continue; // Skip main plane
-               var layer = scanPlane3D.clone();
-               layer.position.z = 5 + (i * 1.5); // Spread layers
-               layer.material = scanPlane3D.material.clone();
-               layer.material.opacity = 0.15 - (Math.abs(i) * 0.03); // Fading depth
-               world.add(layer);
-               window.voxelStack.push(layer);
-             }
-             
-             // X-Ray Womb Aesthetic
-             if (wombShell) {
-               wombShell.material.color.setHex(0x4f46e5); // Indigo Clinical
-               wombShell.material.opacity = 0.08;
-             }
-             addLog('Volumetric Reconstruction: Success. Voxel stack depth: 7.5mm.', 'success');
-           } else {
-             // Reset to 2D
-             if (window.voxelStack) {
-               window.voxelStack.forEach(function(l) { world.remove(l); });
-               window.voxelStack = null;
-             }
-             if (wombShell) {
-               wombShell.material.color.setHex(0x00bfa5);
-               wombShell.material.opacity = 0.15;
-             }
-           }
-        });
-      }
     };
 
-    window.syncDigitalTwin = function(anom) {
+    function initSurgical() {
+      addLog('Neural Link Established. Visual Diagnostic Engine Online.', 'info');
+    }
+
+    initSurgical();
+
+    function syncScanDetections(anom) {
       if (!anom || !anom.length) { scanDetections = []; hasLock = false; return; }
       scanDetections = anom.map(function(a) {
         var hasBox    = Array.isArray(a.bbox) && a.bbox.length === 4;
@@ -895,7 +862,6 @@
         if (hasBox) {
           x = a.bbox[0]; y = a.bbox[1]; w = a.bbox[2]; h = a.bbox[3];
         } else {
-          // Legacy: x/y in normalised -10..+10 space
           var fx = a.x != null ? (a.x + 10) / 20 : 0.4;
           var fy = a.y != null ? (10 - a.y) / 20 : 0.4;
           w = raw_img_w * 0.15; h = raw_img_h * 0.13;
@@ -913,235 +879,7 @@
       hudEl.style.background  = isHigh ? 'rgba(239,68,68,0.92)' : 'rgba(245,158,11,0.92)';
       hudEl.textContent       = isHigh ? 'AI Lock - Critical Finding' : 'AI Lock - Anomaly Detected';
       addLog(n + ' marker' + (n!==1?'s':'') + ' locked. Top: ' + top.label + ' (' + Math.round(top.conf*100) + '%)', 'success');
-    };
-
-    // ── 3D Viewport engine ──────────────────────────────────────────────
-    var scene, camera, renderer, world;
-    var activeTool     = null;
-    var scanPlane3D    = null; // The plane inside the womb
-    var wombShell      = null;
-    var activeToolName = 'trocar';
-    var isToolDragging = false;
-    var prevX = 0, prevY = 0;
-
-    function initToolViewport() {
-      var vp = document.getElementById('tool-viewport');
-      if (!vp) return;
-      
-      scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x07111e);
-      camera = new THREE.PerspectiveCamera(38, vp.clientWidth / vp.clientHeight, 1, 2000);
-      camera.position.set(0, 40, 180);
-      
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer.setSize(vp.clientWidth, vp.clientHeight);
-      vp.appendChild(renderer.domElement);
-      
-      world = new THREE.Group();
-      scene.add(world);
-
-      // Resize Logic (Fixes black output)
-      const resize = () => {
-        const w = vp.clientWidth, h = vp.clientHeight;
-        if (w === 0 || h === 0) return;
-        camera.aspect = w / h;
-        camera.updateProjectionMatrix();
-        renderer.setSize(w, h);
-      };
-      new ResizeObserver(resize).observe(vp);
-      setTimeout(resize, 100);
-
-      var grid = new THREE.GridHelper(400, 40, 0x00bfa5, 0x0d2136);
-      grid.position.y = -100; grid.material.opacity = 0.08; grid.material.transparent = true;
-      world.add(grid);
-
-      scene.add(new THREE.AmbientLight(0xc8dcf0, 0.4));
-      var key = new THREE.DirectionalLight(0xffffff, 1.0); key.position.set(80, 160, 120); scene.add(key);
-      var front = new THREE.PointLight(0x00bfa5, 2.5, 500); front.position.set(0, 60, 120); scene.add(front);
-
-      buildWomb();
-      buildToolDock();
-      spawnTool('trocar');
-      animateTool();
-
-      vp.addEventListener('contextmenu', function(e) { e.preventDefault(); });
-      vp.addEventListener('mousedown',   function(e) {
-        if (e.button === 2) { isToolDragging = true; prevX = e.clientX; prevY = e.clientY; }
-      });
-      window.addEventListener('mousemove', function(e) {
-        if (isToolDragging && activeTool) {
-          activeTool.position.x += (e.clientX - prevX) * 0.22;
-          activeTool.position.y -= (e.clientY - prevY) * 0.22;
-          activeTool.position.z  = Math.min(60, activeTool.position.z);
-          prevX = e.clientX; prevY = e.clientY;
-        }
-      });
-      window.addEventListener('mouseup', function() { isToolDragging = false; });
     }
-
-    function buildWomb() {
-      var anatomy = new THREE.Group();
-      
-      // 1. Holographic Uterine Shell
-      var geo = new THREE.SphereGeometry(65, 32, 32);
-      geo.scale(1, 1.3, 0.85); // Anatomical pear shape
-      
-      var mat = new THREE.MeshStandardMaterial({
-        color: 0x00bfa5,
-        transparent: true,
-        opacity: 0.15,
-        wireframe: false,
-        metalness: 0.2,
-        roughness: 0.1,
-        side: THREE.BackSide, // Visible only when looking "in"
-      });
-      
-      wombShell = new THREE.Mesh(geo, mat);
-      anatomy.add(wombShell);
-
-      // Inner rim glow shell
-      var rimGeo = geo.clone();
-      rimGeo.scale(1.05, 1.05, 1.05);
-      var rimMat = new THREE.MeshBasicMaterial({
-        color: 0x00bfa5,
-        transparent: true,
-        opacity: 0.05,
-        wireframe: true
-      });
-      anatomy.add(new THREE.Mesh(rimGeo, rimMat));
-
-      // 2. Internal Scan Plane (Where the 2D scan goes 3D)
-      var planeGeo = new THREE.PlaneGeometry(80, 60);
-      var planeMat = new THREE.MeshBasicMaterial({
-        color: 0xffffff,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.9,
-        map: null // Loaded later
-      });
-      scanPlane3D = new THREE.Mesh(planeGeo, planeMat);
-      scanPlane3D.position.z = 5;
-      scanPlane3D.visible = false; 
-      anatomy.add(scanPlane3D);
-
-      world.add(anatomy);
-    }
-
-    function animateTool() {
-      requestAnimationFrame(animateTool);
-      var now = Date.now() * 0.001;
-      
-      if (activeTool) {
-        activeTool.position.y = 12 + Math.sin(now * 1.5) * 6;
-        activeTool.rotation.z = Math.sin(now * 0.45) * 0.04;
-        activeTool.rotation.y = Math.sin(now * 0.28) * 0.05;
-        // Point the tool toward the womb centre for better "operative" feel
-        activeTool.lookAt(0, 0, 0);
-      }
-      
-      if (wombShell) {
-        wombShell.material.opacity = 0.12 + Math.sin(now * 2) * 0.03; // Gentle organic pulse
-      }
-
-      if (world) world.rotation.y += 0.003; // Subtle anatomical rotation
-
-      renderer.render(scene, camera);
-    }
-
-    // ── Instrument materials ──────────────────────────────────────────────
-    var MAT = {
-      steel:     function() { return new THREE.MeshStandardMaterial({ color:0xdce8f0, metalness:0.95, roughness:0.12 }); },
-      darkSteel: function() { return new THREE.MeshStandardMaterial({ color:0x5a6e7e, metalness:0.9,  roughness:0.2  }); },
-      teal:      function() { return new THREE.MeshStandardMaterial({ color:0x00bfa5, metalness:0.6,  roughness:0.3, emissive:0x00bfa5, emissiveIntensity:0.25 }); },
-      red:       function() { return new THREE.MeshStandardMaterial({ color:0xef4444, metalness:0.5,  roughness:0.35 }); },
-      gold:      function() { return new THREE.MeshStandardMaterial({ color:0xd4a843, metalness:0.8,  roughness:0.2  }); },
-      white:     function() { return new THREE.MeshStandardMaterial({ color:0xf0f4f8, metalness:0.2,  roughness:0.7  }); },
-    };
-    function cyl(rT,rB,h,s) { return new THREE.CylinderGeometry(rT,rB,h,s||24); }
-
-    function buildTrocar() {
-      var g  = new THREE.Group();
-      var hm = new THREE.Mesh(cyl(5,6,28),   MAT.white());     hm.position.y  = -42; g.add(hm);
-      for (var i=0;i<5;i++) { var r=new THREE.Mesh(cyl(6.2,6.2,1.5,20),MAT.darkSteel()); r.position.y=-32+i*5; g.add(r); }
-      var sh  = new THREE.Mesh(cyl(2,2,55),  MAT.steel());     sh.position.y  =   3; g.add(sh);
-      var hub = new THREE.Mesh(cyl(7,6,10,32),MAT.darkSteel()); hub.position.y = -22; g.add(hub);
-      var tip = new THREE.Mesh(cyl(0,2,12),  MAT.steel());     tip.position.y =  36; g.add(tip);
-      var val = new THREE.Mesh(cyl(3.5,3.5,3,20),MAT.teal()); val.position.y = -17; g.add(val);
-      g.rotation.x = Math.PI/2.4; g.scale.setScalar(0.65); return g;
-    }
-
-    function buildNeedleDriver() {
-      var g  = new THREE.Group();
-      var rg = new THREE.TorusGeometry(5,1.2,12,32);
-      [[-4,-50],[4,-42]].forEach(function(p) { var r=new THREE.Mesh(rg,MAT.steel()); r.position.set(p[0],p[1],0); g.add(r); });
-      var rt  = new THREE.Mesh(cyl(3.5,3,20,16),MAT.darkSteel()); rt.position.y  = -28; g.add(rt);
-      var sh  = new THREE.Mesh(cyl(1.5,1.5,60), MAT.white());     sh.position.y  =   4; g.add(sh);
-      var jb  = new THREE.Mesh(new THREE.BoxGeometry(4,10,3), MAT.gold()); jb.position.y = 36; g.add(jb);
-      [1.5,-1.5].forEach(function(ox) { var j=new THREE.Mesh(new THREE.BoxGeometry(1.5,8,2),MAT.steel()); j.position.set(ox,36,0); g.add(j); });
-      var tip = new THREE.Mesh(cyl(0,1,6),MAT.steel()); tip.position.y = 42; g.add(tip);
-      g.rotation.x = Math.PI/2.4; g.scale.setScalar(0.65); return g;
-    }
-
-    function buildSuction() {
-      var g  = new THREE.Group();
-      var gr = new THREE.Mesh(cyl(6,5,30,12),MAT.white());      gr.position.y  = -42; g.add(gr);
-      var tr = new THREE.Mesh(new THREE.TorusGeometry(8,1.2,8,16,Math.PI*0.6),MAT.darkSteel());
-      tr.position.set(0,-40,0); tr.rotation.z=-Math.PI*0.15; g.add(tr);
-      [[MAT.teal(),-28],[MAT.red(),-20]].forEach(function(arr) {
-        var b=new THREE.Mesh(new THREE.CylinderGeometry(2,2,7,12),arr[0]); b.position.set(5,arr[1],0); b.rotation.z=Math.PI/2; g.add(b);
-      });
-      var hub = new THREE.Mesh(cyl(5,4,10,24),MAT.darkSteel()); hub.position.y = -12; g.add(hub);
-      var ca  = new THREE.Mesh(cyl(2.2,2.2,65),MAT.steel());    ca.position.y  =  10; g.add(ca);
-      var tb  = new THREE.Mesh(cyl(1.2,1.2,14),MAT.teal());     tb.rotation.z  = Math.PI/2; tb.position.set(12,-16,0); g.add(tb);
-      var tip = new THREE.Mesh(cyl(2.2,0,5),MAT.steel());       tip.position.y =  44; g.add(tip);
-      g.rotation.x = Math.PI/2.4; g.scale.setScalar(0.65); return g;
-    }
-
-    var TOOLS = {
-      trocar:  { build:buildTrocar,       icon:'fa-syringe', label:'Trocar'        },
-      needle:  { build:buildNeedleDriver, icon:'fa-scalpel', label:'Needle Driver' },
-      suction: { build:buildSuction,      icon:'fa-droplet', label:'Suction'       },
-    };
-
-    function spawnTool(name) {
-      if (activeTool) scene.remove(activeTool);
-      activeToolName = name;
-      activeTool     = TOOLS[name].build();
-      scene.add(activeTool);
-      
-      addLog('Instrument Synced: ' + TOOLS[name].label, 'info');
-      document.querySelectorAll('.tool-tab').forEach(function(b) {
-        b.classList.toggle('active', b.dataset.tool === name);
-      });
-    }
-
-    function buildToolDock() {
-      var dock = document.getElementById('tool-dock');
-      if (!dock) return;
-      dock.innerHTML = '';
-      Object.keys(TOOLS).forEach(function(key) {
-        var cfg = TOOLS[key];
-        var btn = document.createElement('button');
-        btn.className    = 'tool-tab';
-        btn.dataset.tool = key;
-        btn.innerHTML    = '<i class="fa-solid ' + cfg.icon + '"></i>';
-        btn.title        = cfg.label;
-        btn.onclick      = function() { spawnTool(key); };
-        dock.appendChild(btn);
-      });
-
-      // Add Reset Session Button at the end of dock
-      var resetBtn = document.createElement('button');
-      resetBtn.className = 'tool-tab text-red-400 hover:bg-red-500/20';
-      resetBtn.innerHTML = '<i class="fa-solid fa-rotate-left"></i>';
-      resetBtn.title     = 'Reset Terminal Session';
-      resetBtn.onclick   = resetOperativeSession;
-      dock.appendChild(resetBtn);
-    }
-
-    initToolViewport();
-    buildToolDock();
   </script>
 </body>
 </html>
