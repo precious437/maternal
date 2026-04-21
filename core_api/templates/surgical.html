@@ -304,6 +304,31 @@
           <div id="aiResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
              <div class="col-span-full py-8 text-center text-slate-400 italic text-[11px]">Advanced AI Link established. Upload a scan to begin structural analysis.</div>
           </div>
+          
+          <!-- Pathological Monitoring Suite -->
+          <div class="mt-6 border-t border-slate-100 pt-6">
+            <h4 class="text-[10px] font-black uppercase text-slate-400 tracking-widest mb-4 flex items-center gap-2">
+              <i class="fa-solid fa-shield-virus text-teal-500"></i> Pathological Monitoring Suite
+            </h4>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="pathologySuite">
+              <div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 opacity-40">
+                <p class="text-[9px] font-bold text-slate-500">Ventriculomegaly</p>
+                <p class="text-[8px] text-slate-400">Scanning...</p>
+              </div>
+              <div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 opacity-40">
+                <p class="text-[9px] font-bold text-slate-500">Hydrocephalus</p>
+                <p class="text-[8px] text-slate-400">Scanning...</p>
+              </div>
+              <div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 opacity-40">
+                <p class="text-[9px] font-bold text-slate-500">Microcephaly</p>
+                <p class="text-[8px] text-slate-400">Scanning...</p>
+              </div>
+              <div class="bg-slate-50/50 p-3 rounded-xl border border-slate-100/50 opacity-40">
+                <p class="text-[9px] font-bold text-slate-500">Skull Integrity</p>
+                <p class="text-[8px] text-slate-400">Scanning...</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -547,6 +572,8 @@
       // Update Global Status
       const hasAnomaly = result.anomalies.some(a => a.is_anomaly);
       const statusBadge = document.getElementById('live-scan-badge');
+      const suite       = document.getElementById('pathologySuite');
+
       if (statusBadge) {
         if (hasAnomaly) {
            statusBadge.textContent = 'Anomaly Detected';
@@ -555,6 +582,30 @@
            statusBadge.textContent = 'Stable Sweep';
            statusBadge.className = 'px-3 py-1 bg-teal-50 text-teal-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-teal-100 shadow-sm';
         }
+      }
+
+      // Update pathology suite visualization
+      if (suite) {
+        const conditions = [
+          { name: 'Ventriculomegaly', label: 'VENTRICLE' },
+          { name: 'Hydrocephalus', label: 'FLUID' },
+          { name: 'Microcephaly', label: 'SKULL_SIZE' },
+          { name: 'Skull Integrity', label: 'SKULL' }
+        ];
+
+        suite.innerHTML = conditions.map(c => {
+          const match = result.anomalies.find(a => a.label.toUpperCase().includes(c.label));
+          const isHighRisk = match && match.is_anomaly;
+          
+          return `
+            <div class="p-3 rounded-xl border transition-all ${match ? 'bg-white opacity-100 scale-105 shadow-sm' : 'bg-slate-50/50 opacity-40'} ${isHighRisk ? 'border-red-200 ring-1 ring-red-100' : 'border-slate-100'}">
+              <p class="text-[9px] font-bold ${isHighRisk ? 'text-red-600' : 'text-slate-600'}">${c.name}</p>
+              <p class="text-[8px] ${isHighRisk ? 'text-red-400' : (match ? 'text-teal-500 font-bold' : 'text-slate-400')}">
+                ${isHighRisk ? 'HIGH RISK' : (match ? 'OBSERVED' : 'NOT DETECTED')}
+              </p>
+            </div>
+          `;
+        }).join('');
       }
     }
 
