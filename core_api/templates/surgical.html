@@ -551,20 +551,35 @@
       
       localStorage.setItem('active_findings', JSON.stringify(result));
 
-      const confColor = function(c) {
-        if (c >= 0.8) return 'text-red-500 bg-red-50 border-red-100';
-        if (c >= 0.6) return 'text-amber-600 bg-amber-50 border-amber-100';
-        return 'text-teal-600 bg-teal-50 border-teal-100';
-      };
-
       container.innerHTML = result.anomalies.map(function(a) {
         const pct = Math.round((a.confidence || 0) * 100);
         const isAnomaly = a.is_anomaly || a.label.toLowerCase().includes('abnormal');
+        
+        // Check for persisted verification status
+        const savedStatus = JSON.parse(localStorage.getItem('verifications') || '{}');
+        const vKey = a.label + '-' + Math.round(a.bbox[0]) + '-' + Math.round(a.bbox[1]);
+        const currentVStatus = savedStatus[vKey];
+
         const style = isAnomaly ? 'text-red-500 bg-red-50 border-red-200' : 'text-teal-600 bg-teal-50 border-teal-100';
         const cardClass = isAnomaly ? 'high-conf' : (a.confidence >= 0.6 ? 'mid-conf' : '');
         const barColor = isAnomaly ? 'bg-red-500' : (a.confidence >= 0.6 ? 'bg-amber-500' : 'bg-teal-500');
 
-        return '<div class="finding-card ' + cardClass + ' animate-fadeIn relative ' + (isAnomaly ? 'border-red-200 shadow-lg shadow-red-100' : '') + '">'
+        let actions = '';
+        let cardStyle = '';
+        if (currentVStatus === 'verified') {
+           actions = '<div class="w-full py-1.5 text-center text-[8px] font-black text-teal-600 uppercase tracking-widest"><i class="fa-solid fa-check-circle mr-1"></i> Confirmed</div>';
+           cardStyle = 'border-color: #00bfa5; background: #f0fdfa;';
+        } else if (currentVStatus === 'rejected') {
+           actions = '<div class="w-full py-1.5 text-center text-[8px] font-black text-slate-400 uppercase tracking-widest"><i class="fa-solid fa-circle-xmark mr-1"></i> Hallucination</div>';
+           cardStyle = 'opacity: 0.4; filter: grayscale(1);';
+        } else {
+           actions = '<div class="flex items-center gap-2 mb-4">'
+            + '<button onclick="verifyFinding(\'' + a.label + '\', true, this, \'' + vKey + '\')" class="flex-1 py-1.5 rounded-lg bg-teal-50 text-teal-600 text-[8px] font-black uppercase border border-teal-100 hover:bg-teal-600 hover:text-white transition-all">Verify</button>'
+            + '<button onclick="verifyFinding(\'' + a.label + '\', false, this, \'' + vKey + '\')" class="flex-1 py-1.5 rounded-lg bg-slate-50 text-slate-400 text-[8px] font-black uppercase border border-slate-100 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all">Reject</button>'
+            + '</div>';
+        }
+
+        return '<div class="finding-card ' + cardClass + ' animate-fadeIn relative ' + (isAnomaly ? 'border-red-200 shadow-lg shadow-red-100' : '') + '" style="' + cardStyle + '" id="finding-' + vKey + '">'
           + (isAnomaly ? '<div class="absolute top-0 right-0 px-3 py-1 bg-red-500 text-white text-[8px] font-black uppercase rounded-bl-xl shadow-lg animate-pulse z-10">Critical Anomaly</div>' : '')
           + '<div class="flex items-center justify-between mb-2">'
           + '<div class="flex flex-col">'
@@ -574,6 +589,7 @@
           + '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black border ' + style + '">' + pct + '%</span>'
           + '</div>'
           + '<p class="text-[10px] ' + (isAnomaly ? 'text-red-600/80' : 'text-slate-500') + ' leading-relaxed mb-3 mt-2">' + (a.description || '') + '</p>'
+          + actions
           + '<div class="flex items-center justify-between mt-4">'
           + '<span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter"><i class="fa-solid fa-location-crosshairs mr-1"></i>XY: ' + Math.round(a.bbox[0]) + ',' + Math.round(a.bbox[1]) + '</span>'
           + '<span class="text-[8px] font-bold text-slate-300">REF: ' + Math.random().toString(36).substr(2, 5).toUpperCase() + '</span>'
@@ -581,6 +597,14 @@
           + '<div class="conf-meter"><div class="conf-bar ' + barColor + '" style="width:' + pct + '%"></div></div>'
           + '</div>';
       }).join('');
+      
+      // Add Digital Sign-off Button if findings exist
+      if (result.anomalies.length > 0) {
+        container.innerHTML += '<div class="col-span-full pt-6 flex justify-center" id="sign-off-zone">'
+          + '<button onclick="signOffReport()" class="px-8 py-3 bg-slate-900 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-teal-600 transition-all shadow-xl hover:shadow-teal-200/50 flex items-center gap-2">'
+          + '<i class="fa-solid fa-signature"></i> Finalize & Sign Record'
+          + '</button></div>';
+      }
       
       // Update Global Status
       const hasAnomaly = result.anomalies.some(a => a.is_anomaly);
@@ -622,7 +646,47 @@
       }
     }
 
-    // ── Clinical History & Persistence ───────────────────────────────────
+    // ── Clinical Verification Logic ───────────────────────────────────
+    window.verifyFinding = function(label, isVerified, btn, key) {
+      const card = btn.closest('.finding-card');
+      const vStatus = isVerified ? 'verified' : 'rejected';
+      
+      // Persist status
+      const savedStatus = JSON.parse(localStorage.getItem('verifications') || '{}');
+      savedStatus[key] = vStatus;
+      localStorage.setItem('verifications', JSON.stringify(savedStatus));
+
+      if (isVerified) {
+        card.style.borderColor = '#00bfa5';
+        card.style.background = '#f0fdfa';
+        btn.parentElement.innerHTML = '<div class="w-full py-1.5 text-center text-[8px] font-black text-teal-600 uppercase tracking-widest"><i class="fa-solid fa-check-circle mr-1"></i> Confirmed</div>';
+        addLog('Structural target "' + label + '" verified as accurate.', 'info');
+      } else {
+        card.style.opacity = '0.4';
+        card.style.filter = 'grayscale(1)';
+        btn.parentElement.innerHTML = '<div class="w-full py-1.5 text-center text-[8px] font-black text-slate-400 uppercase tracking-widest"><i class="fa-solid fa-circle-xmark mr-1"></i> Hallucination</div>';
+        addLog('Finding "' + label + '" rejected: Possible AI structural hallucination.', 'warning');
+      }
+    };
+
+    window.signOffReport = function() {
+      const zone = document.getElementById('sign-off-zone');
+      const time = new Date().toLocaleTimeString();
+      zone.innerHTML = `
+        <div class="w-full p-4 bg-teal-50 border border-teal-200 rounded-2xl flex flex-col items-center animate-fadeIn">
+          <p class="text-[9px] font-black text-teal-600 uppercase tracking-[0.2em]">Diagnostic Record Finalized</p>
+          <p class="text-[8px] text-teal-500 mt-1">Signed by Surgeon at ${time}</p>
+          <div class="mt-3 flex items-center gap-2">
+            <i class="fa-solid fa-shield-check text-teal-600"></i>
+            <span class="text-[9px] font-medium text-teal-700">Digital Seal Applied: MD-${Math.random().toString(36).substr(2, 6).toUpperCase()}</span>
+          </div>
+        </div>
+      `;
+      addLog('Clinical record signed and finalized by Surgeon at ' + time, 'info');
+      
+      // Disable further verifications
+      document.querySelectorAll('.finding-card button').forEach(b => b.remove());
+    };
     async function saveVitals() {
       const data = {
         maternal_bp: document.getElementById('bp').value,
