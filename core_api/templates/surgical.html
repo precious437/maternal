@@ -145,6 +145,35 @@
       color: #334155;
     }
 
+    /* ── Premium Finding Cards ──────────────────────────────── */
+    .finding-card {
+      position: relative;
+      background: linear-gradient(145deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%);
+      border: 1px solid rgba(0,191,165,0.08);
+      border-radius: 1.5rem;
+      padding: 1.25rem;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+    .finding-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.08);
+      border-color: rgba(0,191,165,0.3);
+    }
+    .finding-card::before {
+      content: ''; position: absolute; top:0; left:0; width:4px; height:100%;
+      background: #00bfa5; opacity: 0.6;
+    }
+    .finding-card.high-conf::before { background: #ef4444; }
+    .finding-card.mid-conf::before { background: #f59e0b; }
+
+    .conf-meter {
+      height: 4px; background: #f1f5f9; border-radius: 2px; margin-top: 12px; overflow: hidden;
+    }
+    .conf-bar {
+      height: 100%; transition: width 1s ease-out;
+    }
+
     /* ── Log Overlay Backdrop ──────────────────────────────── */
     #log-backdrop {
       position: fixed; inset: 0; background: rgba(10, 23, 41, 0.4);
@@ -493,15 +522,23 @@
       container.innerHTML = result.anomalies.map(function(a) {
         const pct = Math.round((a.confidence || 0) * 100);
         const style = confColor(a.confidence||0);
-        return '<div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all animate-fadeIn">'
+        const cardClass = a.confidence >= 0.8 ? 'high-conf' : (a.confidence >= 0.6 ? 'mid-conf' : '');
+        const barColor = a.confidence >= 0.8 ? 'bg-red-500' : (a.confidence >= 0.6 ? 'bg-amber-500' : 'bg-teal-500');
+
+        return '<div class="finding-card ' + cardClass + ' animate-fadeIn">'
           + '<div class="flex items-center justify-between mb-2">'
-          + '<span class="text-[11px] font-extrabold text-slate-800">' + (a.label || 'Finding') + '</span>'
-          + '<span class="px-2 py-0.5 rounded-lg text-[9px] font-black border ' + style + '">' + pct + '%</span>'
+          + '<div class="flex flex-col">'
+          + '<span class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Structural Target</span>'
+          + '<span class="text-xs font-extrabold text-slate-800">' + (a.label || 'Finding').replace(/_/g, ' ') + '</span>'
           + '</div>'
-          + (a.description ? '<p class="text-[10px] text-slate-500 leading-relaxed mb-3">' + a.description + '</p>' : '')
-          + '<div class="flex gap-2">'
-          + '<span class="text-[8px] font-black uppercase text-slate-300 tracking-tighter">Loc: ' + Math.round(a.bbox[0]) + ',' + Math.round(a.bbox[1]) + '</span>'
+          + '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black border ' + style + '">' + pct + '%</span>'
           + '</div>'
+          + (a.description ? '<p class="text-[10px] text-slate-500 leading-relaxed mb-3 mt-2">' + a.description + '</p>' : '')
+          + '<div class="flex items-center justify-between mt-4">'
+          + '<span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter"><i class="fa-solid fa-location-crosshairs mr-1"></i>XY: ' + Math.round(a.bbox[0]) + ',' + Math.round(a.bbox[1]) + '</span>'
+          + '<span class="text-[8px] font-bold text-slate-300">REF: ' + Math.random().toString(36).substr(2, 5).toUpperCase() + '</span>'
+          + '</div>'
+          + '<div class="conf-meter"><div class="conf-bar ' + barColor + '" style="width:' + pct + '%"></div></div>'
           + '</div>';
       }).join('');
     }
@@ -800,8 +837,14 @@
         var cx = px + pw/2,               cy = py + ph/2;
 
         // ── Clinical Data-Brackets ─────────────────────────────
-        scanCtx.strokeStyle = _confColor(conf, 0.85); scanCtx.lineWidth = 1.5;
-        var cs = Math.min(pw, ph) * 0.18;
+        // ── Tactical Crosshair Brackets ───────────────────────
+        scanCtx.strokeStyle = _confColor(conf, 0.9); scanCtx.lineWidth = 2;
+        var cs = Math.min(pw, ph) * 0.25;
+        
+        // Dynamic Glow
+        scanCtx.shadowBlur = 10;
+        scanCtx.shadowColor = _confColor(conf, 0.4);
+
         [[px,py,1,1],[px+pw,py,-1,1],[px+pw,py+ph,-1,-1],[px,py+ph,1,-1]].forEach(function(bc) {
           scanCtx.beginPath();
           scanCtx.moveTo(bc[0]+bc[2]*cs, bc[1]);
@@ -809,6 +852,7 @@
           scanCtx.lineTo(bc[0], bc[1]+bc[3]*cs);
           scanCtx.stroke();
         });
+        scanCtx.shadowBlur = 0; // Reset
 
         // ── Floating Insight Label ────────────────────────────
         var tag = (det.label || 'Finding').toUpperCase() + ' // ' + Math.round(conf*100) + '%';
