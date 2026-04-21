@@ -253,7 +253,7 @@
               <i class="fa-solid fa-ultrasound"></i>
               <div class="text-center">
                 <p class="font-black text-[11px] tracking-[0.2em] uppercase">Maternal AI</p>
-                <p class="text-[9px] font-bold opacity-60">Initializing Neural Diagnostic Link...</p>
+                <p class="text-[9px] font-bold opacity-60">Initializing Clinical Diagnostic Link...</p>
               </div>
             </div>
             <img id="scan-img" src="" alt="Ultrasound scan" style="display:none;">
@@ -295,14 +295,14 @@
                 <i class="fa-solid fa-microscope"></i>
               </div>
               <div>
-                <h3 class="text-sm font-bold text-slate-800">Neural Diagnostic Report</h3>
-                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Automated Findings & Observations</p>
+                <h3 class="text-sm font-bold text-slate-800">Advanced AI Diagnostic Report</h3>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Automated Clinical Findings & Observations</p>
               </div>
             </div>
             <div class="px-3 py-1 bg-slate-50 text-slate-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-slate-100 shadow-sm" id="live-scan-badge">Diagnostic Standby</div>
           </div>
           <div id="aiResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-             <div class="col-span-full py-8 text-center text-slate-400 italic text-[11px]">Neural link established. Upload a scan to begin structural analysis.</div>
+             <div class="col-span-full py-8 text-center text-slate-400 italic text-[11px]">Advanced AI Link established. Upload a scan to begin structural analysis.</div>
           </div>
         </div>
       </div>
@@ -521,19 +521,21 @@
 
       container.innerHTML = result.anomalies.map(function(a) {
         const pct = Math.round((a.confidence || 0) * 100);
-        const style = confColor(a.confidence||0);
-        const cardClass = a.confidence >= 0.8 ? 'high-conf' : (a.confidence >= 0.6 ? 'mid-conf' : '');
-        const barColor = a.confidence >= 0.8 ? 'bg-red-500' : (a.confidence >= 0.6 ? 'bg-amber-500' : 'bg-teal-500');
+        const isAnomaly = a.is_anomaly || a.label.toLowerCase().includes('abnormal');
+        const style = isAnomaly ? 'text-red-500 bg-red-50 border-red-200' : 'text-teal-600 bg-teal-50 border-teal-100';
+        const cardClass = isAnomaly ? 'high-conf' : (a.confidence >= 0.6 ? 'mid-conf' : '');
+        const barColor = isAnomaly ? 'bg-red-500' : (a.confidence >= 0.6 ? 'bg-amber-500' : 'bg-teal-500');
 
-        return '<div class="finding-card ' + cardClass + ' animate-fadeIn">'
+        return '<div class="finding-card ' + cardClass + ' animate-fadeIn relative ' + (isAnomaly ? 'border-red-200 shadow-lg shadow-red-100' : '') + '">'
+          + (isAnomaly ? '<div class="absolute top-0 right-0 px-3 py-1 bg-red-500 text-white text-[8px] font-black uppercase rounded-bl-xl shadow-lg animate-pulse z-10">Critical Anomaly</div>' : '')
           + '<div class="flex items-center justify-between mb-2">'
           + '<div class="flex flex-col">'
-          + '<span class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">Structural Target</span>'
-          + '<span class="text-xs font-extrabold text-slate-800">' + (a.label || 'Finding').replace(/_/g, ' ') + '</span>'
+          + '<span class="text-[10px] font-black uppercase text-slate-400 tracking-wider mb-1">' + (isAnomaly ? 'Pathological Focus' : 'Structural Target') + '</span>'
+          + '<span class="text-xs font-extrabold ' + (isAnomaly ? 'text-red-700' : 'text-slate-800') + '">' + (a.label || 'Finding').replace(/_/g, ' ') + '</span>'
           + '</div>'
           + '<span class="px-2.5 py-1 rounded-lg text-[10px] font-black border ' + style + '">' + pct + '%</span>'
           + '</div>'
-          + (a.description ? '<p class="text-[10px] text-slate-500 leading-relaxed mb-3 mt-2">' + a.description + '</p>' : '')
+          + '<p class="text-[10px] ' + (isAnomaly ? 'text-red-600/80' : 'text-slate-500') + ' leading-relaxed mb-3 mt-2">' + (a.description || '') + '</p>'
           + '<div class="flex items-center justify-between mt-4">'
           + '<span class="text-[8px] font-bold text-slate-400 uppercase tracking-tighter"><i class="fa-solid fa-location-crosshairs mr-1"></i>XY: ' + Math.round(a.bbox[0]) + ',' + Math.round(a.bbox[1]) + '</span>'
           + '<span class="text-[8px] font-bold text-slate-300">REF: ' + Math.random().toString(36).substr(2, 5).toUpperCase() + '</span>'
@@ -541,6 +543,19 @@
           + '<div class="conf-meter"><div class="conf-bar ' + barColor + '" style="width:' + pct + '%"></div></div>'
           + '</div>';
       }).join('');
+      
+      // Update Global Status
+      const hasAnomaly = result.anomalies.some(a => a.is_anomaly);
+      const statusBadge = document.getElementById('live-scan-badge');
+      if (statusBadge) {
+        if (hasAnomaly) {
+           statusBadge.textContent = 'Anomaly Detected';
+           statusBadge.className = 'px-3 py-1 bg-red-100 text-red-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-red-200 shadow-sm animate-pulse';
+        } else {
+           statusBadge.textContent = 'Stable Sweep';
+           statusBadge.className = 'px-3 py-1 bg-teal-50 text-teal-600 rounded-full text-[9px] font-black uppercase tracking-widest border border-teal-100 shadow-sm';
+        }
+      }
     }
 
     // ── Clinical History & Persistence ───────────────────────────────────
@@ -927,7 +942,7 @@
     };
 
     function initSurgical() {
-      addLog('Neural Link Established. Visual Diagnostic Engine Online.', 'info');
+      addLog('Advanced Diagnostic Link Established. Visual Engine Online.', 'info');
       
       const savedFindings = localStorage.getItem('active_findings');
       if (savedFindings) {

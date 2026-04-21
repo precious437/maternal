@@ -89,22 +89,26 @@ class AIService:
             bw  = float(pred.get("width", img_w * 0.15))
             bh  = float(pred.get("height", img_h * 0.12))
 
+            # Determine if this finding is a clinical anomaly
+            label = pred["class"]
+            is_anomaly = any(word in label.lower() for word in ["abnormal", "anomaly", "lesion", "defect", "cyst", "fluid"])
+            confidence = round(float(pred["confidence"]), 3)
+
             anomalies.append({
-                "label":       pred["class"],
-                "confidence":  round(float(pred["confidence"]), 3),
-                # Bounding box top-left + size in ORIGINAL image pixels
+                "label":       label,
+                "confidence":  confidence,
+                "is_anomaly":  is_anomaly or (confidence > 0.85),
                 "bbox": [
                     round(cx - bw / 2, 1),   # x_left
                     round(cy - bh / 2, 1),   # y_top
                     round(bw, 1),             # width
                     round(bh, 1),             # height
                 ],
-                # Original image dimensions so the canvas can scale correctly
                 "img_w": img_w,
                 "img_h": img_h,
                 "description": (
-                    f"Clinical Target: {pred['class']} "
-                    f"({round(float(pred['confidence'])*100)}% confidence)"
+                    f"Clinical Focal Point: {label.replace('_', ' ')} "
+                    f"({round(confidence*100)}% confidence). Review for potential structural variance."
                 ),
             })
 
