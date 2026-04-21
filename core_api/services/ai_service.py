@@ -89,6 +89,11 @@ class AIService:
             bw  = float(pred.get("width", img_w * 0.15))
             bh  = float(pred.get("height", img_h * 0.12))
 
+            # Define clinical markers
+            label = pred["class"]
+            confidence = round(float(pred["confidence"]), 3)
+            is_anomaly = any(word in label.lower() for word in ["abnormal", "anomaly", "lesion", "defect", "cyst", "fluid"])
+
             # Clinical Encyclopedia Logic
             explanations = {
                 "CSP": "Cavum Septum Pellucidum identified. Presence is a key indicator of normal midline brain development and rules out several major holoprosencephaly variants.",

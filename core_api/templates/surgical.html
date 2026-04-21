@@ -198,6 +198,14 @@
 
     @keyframes scanning-line { 0%{top:0;opacity:0;} 50%{opacity:1;} 100%{top:100%;opacity:0;} }
     @keyframes fadeIn { from{opacity:0;transform:translateY(5px);} to{opacity:1;transform:translateY(0);} }
+    @keyframes pulse-glow { 0% { box-shadow: 0 0 5px rgba(0,191,165,0.4); } 50% { box-shadow: 0 0 20px rgba(0,191,165,0.8); } 100% { box-shadow: 0 0 5px rgba(0,191,165,0.4); } }
+    
+    #scan-panel.scanning::after {
+      content: ''; position: absolute; top:0; left:0; right:0; bottom:0;
+      background: linear-gradient(to bottom, transparent, rgba(0,191,165,0.1), transparent);
+      animation: scanning-line 2s infinite linear; pointer-events: none; z-index: 100;
+      border: 1px solid rgba(0,191,165,0.2);
+    }
   </style>
 </head>
 <body class="bg-[#f8fafb] text-slate-800">
@@ -483,7 +491,10 @@
       };
       reader.readAsDataURL(file);
 
-      addLog('Uploading scan for AI analysis...', 'info');
+      addLog('Uploading scan for Advanced AI analysis...', 'info');
+      document.getElementById('scan-panel').classList.add('scanning');
+      document.getElementById('live-scan-badge').textContent = 'AI Mapping...';
+      document.getElementById('live-scan-badge').className = 'px-3 py-1 bg-blue-50 text-blue-500 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-100 shadow-sm animate-pulse';
 
       const formData = new FormData();
       formData.append('image', file);
@@ -518,6 +529,8 @@
         }
       } catch(e) {
         addLog('Network error: ' + e.message, 'error');
+      } finally {
+        document.getElementById('scan-panel').classList.remove('scanning');
       }
     }
 
@@ -588,9 +601,9 @@
       if (suite) {
         const conditions = [
           { name: 'Ventriculomegaly', label: 'VENTRICLE' },
-          { name: 'Hydrocephalus', label: 'FLUID' },
-          { name: 'Microcephaly', label: 'SKULL_SIZE' },
-          { name: 'Skull Integrity', label: 'SKULL' }
+          { name: 'Midline Shift', label: 'MIDLINE' },
+          { name: 'Craniofacial Symmetry', label: 'SKULL' },
+          { name: 'Hydrocephalus', label: 'FLUID' }
         ];
 
         suite.innerHTML = conditions.map(c => {
@@ -651,35 +664,43 @@
         const res  = await fetch('/api/v1/history/');
         const data = await res.json();
         // Backend returns { "history": [...] }
-        const records = data.history || data.records || (Array.isArray(data) ? data : []);
-        
-        if (records.length > 0) {
-          container.innerHTML = '';
-          records.forEach(function(item) {
-            const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent';
-            const isDic = item.processed_as === 'DICOM';
-            const div  = document.createElement('div');
-            div.className = 'history-item flex items-center gap-3 p-3 rounded-xl border border-slate-50 hover:border-teal-100 hover:bg-teal-50/30 cursor-pointer transition-all mb-2';
-            div.onclick   = function() { 
-              inspectHistoryItem(item); 
-              localStorage.removeItem('active_scan');
-              localStorage.removeItem('active_findings');
-            };
+            const records = data.history || data.records || (Array.isArray(data) ? data : []);
             
-            div.innerHTML = `
-              <div class="w-10 h-10 rounded-lg bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200">
-                ${isDic ? '<i class="fa-solid fa-dna text-teal-600"></i>' : `<img src="${item.image_url}" class="w-full h-full object-cover">`}
-              </div>
-              <div class="flex-1 min-w-0">
-                <div class="text-[10px] font-black truncate">${item.filename || 'Archive'}</div>
-                <div class="flex items-center gap-2 mt-0.5">
-                  <span class="text-[8px] font-bold px-1.5 py-0.5 rounded ${isDic ? 'bg-indigo-100 text-indigo-700' : 'bg-teal-100 text-teal-700'}">${item.processed_as || 'IMAGE'}</span>
-                  <span class="text-[9px] text-slate-400 font-medium">${date}</span>
-                </div>
-              </div>
-            `;
-            container.appendChild(div);
-          });
+            if (records.length > 0) {
+              container.innerHTML = '';
+              records.forEach(function(item) {
+                const date = item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recent';
+                const isDic = item.processed_as === 'DICOM';
+                const ai = item.analysis_results || {};
+                const count = ai.count || 0;
+                const hasAnomaly = ai.anomalies && ai.anomalies.some(a => a.is_anomaly);
+                
+                const div  = document.createElement('div');
+                div.className = 'history-item flex items-center gap-3 p-3 rounded-xl border border-slate-50 hover:border-teal-100 hover:bg-white cursor-pointer transition-all mb-2 hover:shadow-lg';
+                div.onclick   = function() { 
+                  inspectHistoryItem(item); 
+                };
+                
+                div.innerHTML = `
+                  <div class="w-10 h-10 rounded-lg bg-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden border border-slate-200">
+                    ${isDic ? '<i class="fa-solid fa-dna text-teal-600"></i>' : `<img src="${item.image_url}" class="w-full h-full object-cover">`}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex justify-between items-start">
+                      <div class="text-[10px] font-black truncate max-w-[120px]">${item.filename || 'Archive'}</div>
+                      <span class="text-[7px] font-black uppercase px-1.5 py-0.5 rounded ${hasAnomaly ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-400'}">
+                        ${hasAnomaly ? 'Anomaly' : (count > 0 ? 'Clear' : 'Idle')}
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-2 mt-1">
+                      <span class="text-[8px] font-bold px-1.5 py-0.5 rounded ${isDic ? 'bg-indigo-50 text-indigo-500' : 'bg-teal-50 text-teal-600'}">${isDic ? 'DICOM' : 'ULTRA'}</span>
+                      <span class="text-[8px] text-slate-300 font-medium">${date}</span>
+                      ${count > 0 ? `<span class="text-[8px] font-bold text-teal-500 ml-auto">${count} Targets</span>` : ''}
+                    </div>
+                  </div>
+                `;
+                container.appendChild(div);
+              });
         } else {
           container.innerHTML = '<div class="text-[10px] text-slate-400 p-4 text-center italic">No prior archives found.</div>';
         }
