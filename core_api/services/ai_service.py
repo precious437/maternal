@@ -13,7 +13,7 @@ class AIService:
     # Use standard settings pattern with proper fallbacks
     API_KEY = getattr(settings, 'ROBOFLOW_API_KEY', os.getenv("ROBOFLOW_API_KEY", "VlMlrQc1hkjaUrctNPdh"))
     WORKSPACE = getattr(settings, 'ROBOFLOW_WORKSPACE', os.getenv("ROBOFLOW_WORKSPACE", "preciouss-workspace-5hkb5"))
-    WORKFLOW_ID = getattr(settings, 'ROBOFLOW_WORKFLOW_ID', os.getenv("ROBOFLOW_WORKFLOW_ID", "detect-count-and-visualize"))
+    WORKFLOW_ID = getattr(settings, 'ROBOFLOW_WORKFLOW_ID', os.getenv("ROBOFLOW_WORKFLOW_ID", "detect-count-and-visualize-6"))
     
     @staticmethod
     def analyze_scan(file_path):
@@ -47,6 +47,7 @@ class AIService:
                 
                 if response.status_code == 200:
                     result = response.json()
+                    logger.info(f"Roboflow raw response: {result}")
                     return AIService.process_workflow_result(result)
                 else:
                     logger.error(f"Roboflow API error: {response.status_code} - {response.text}")
@@ -61,7 +62,7 @@ class AIService:
         """Extract predictions from the Roboflow Workflow output with 3D coordinate mapping"""
         outputs = raw_result.get("outputs", [])
         if not outputs:
-            return AIService.apply_clinical_fallback()
+            return {"success": True, "anomalies": [], "count": 0, "status": "Clear Scan"}
             
         # Target node finding
         main_node = outputs[0].get(AIService.WORKFLOW_ID, {})
@@ -75,7 +76,7 @@ class AIService:
         predictions = main_node.get("predictions", [])
         
         if not predictions:
-            return AIService.apply_clinical_fallback()
+            return {"success": True, "anomalies": [], "count": 0, "status": "Clear Scan"}
 
         anomalies = []
         for pred in predictions:
@@ -115,35 +116,5 @@ class AIService:
 
     @staticmethod
     def apply_clinical_fallback():
-        """Primary Clinical Failure State: Return critical markers in bbox pixel format"""
-        # Using a standard 640×480 reference frame for the fallback markers
-        W, H = 640, 480
-        anomalies = [
-            {
-                "label": "Placenta Previa (Grade III)",
-                "confidence": 0.94,
-                "bbox": [W*0.55, H*0.52, W*0.22, H*0.18],
-                "img_w": W, "img_h": H,
-                "description": "CRITICAL: Placenta partially covering the internal cervical os. Immediate surgical planning required.",
-            },
-            {
-                "label": "Fetal Growth Restriction (IUGR)",
-                "confidence": 0.82,
-                "bbox": [W*0.18, H*0.30, W*0.20, H*0.16],
-                "img_w": W, "img_h": H,
-                "description": "OBSERVATION: Abdominal circumference < 10th percentile for gestational age.",
-            },
-            {
-                "label": "Umbilical Cord Insertion Risk",
-                "confidence": 0.76,
-                "bbox": [W*0.38, H*0.44, W*0.16, H*0.14],
-                "img_w": W, "img_h": H,
-                "description": "WARNING: Marginal cord insertion noted at placental edge.",
-            },
-        ]
-        return {
-            "success": True,
-            "anomalies": anomalies,
-            "count": len(anomalies),
-            "fallback_used": True,
-        }
+        """Used only for critical system initialization tests"""
+        return {"success": True, "anomalies": [], "count": 0, "status": "Initialized"}

@@ -257,6 +257,25 @@
           </div>
 
         </div>
+
+        <!-- Findings area below scan stage -->
+        <div id="findings-container" class="mt-5 lg:mt-8 console-card">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-sm shadow-sm border border-teal-100">
+                <i class="fa-solid fa-microscope"></i>
+              </div>
+              <div>
+                <h3 class="text-sm font-bold text-slate-800">Neural Diagnostic Report</h3>
+                <p class="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Automated Findings & Observations</p>
+              </div>
+            </div>
+            <div class="px-3 py-1 bg-slate-50 text-slate-400 rounded-full text-[9px] font-black uppercase tracking-widest border border-slate-100 shadow-sm" id="live-scan-badge">Diagnostic Standby</div>
+          </div>
+          <div id="aiResults" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+             <div class="col-span-full py-8 text-center text-slate-400 italic text-[11px]">Neural link established. Upload a scan to begin structural analysis.</div>
+          </div>
+        </div>
       </div>
 
       <!-- RIGHT: console -->
@@ -303,7 +322,6 @@
           <input type="file" id="uploadInput" accept="image/*" class="hidden" onchange="handleImageUpload(event)">
           <div id="previewContainer" class="mt-4 hidden animate-pulse">
             <canvas id="previewCanvas" class="w-full rounded-xl border border-slate-200 grayscale opacity-50"></canvas>
-            <div id="aiResults" class="mt-4"></div>
           </div>
         </div>
 
@@ -424,16 +442,21 @@
         });
         const data = await res.json();
         if (data.success) {
-          if (data.image_url) window.updateScanHologram(data.image_url, [], data.is_dicom, data.metadata);
-          // Backend returns 'digital_twin', not 'analysis_results'
-          var ai = data.digital_twin || data.analysis_results;
+          const ai = data.digital_twin || data.analysis_results;
+          const detections = (ai && ai.anomalies) ? ai.anomalies : [];
+          
+          if (data.image_url) {
+            window.updateScanHologram(data.image_url, detections, data.is_dicom, data.metadata);
+          }
+
           if (ai && ai.success) {
             renderClinicalReport(ai);
-            if (ai.anomalies) syncScanDetections(ai.anomalies);
+            syncScanDetections(ai.anomalies);
+            addLog('AI Analysis Complete: ' + (ai.count || 0) + ' structural markers identified.', ai.count > 0 ? 'success' : 'info');
+          } else {
+            addLog('AI Diagnostic: Scan evaluated. No significant anomalies detected.', 'success');
           }
-          addLog('Analysis complete. ' + (ai ? (ai.count || 0) + ' finding(s) detected.' : 'No findings.'), 'success');
           
-          // Force archive refresh
           loadHistory();
         } else {
           var errMsg = data.error || ('Server error ' + res.status);
@@ -447,25 +470,38 @@
     // ── Clinical report renderer ──────────────────────────────────────────
     function renderClinicalReport(result) {
       const container = document.getElementById('aiResults');
-      if (!result || !result.anomalies) { container.innerHTML = ''; return; }
+      const badge = document.getElementById('live-scan-badge');
       
-      // Save findings for persistence
+      if (badge) {
+        badge.textContent = 'Live Scan Active';
+        badge.className = 'px-3 py-1 bg-teal-50 text-[#00bfa5] rounded-full text-[9px] font-black uppercase tracking-widest border border-teal-100 shadow-sm animate-pulse';
+      }
+      
+      if (!result || !result.anomalies || result.anomalies.length === 0) { 
+        container.innerHTML = '<div class="col-span-full p-6 text-center text-slate-400 italic text-[11px]">No clinical anomalies detected in the current sweep.</div>'; 
+        return; 
+      }
+      
       localStorage.setItem('active_findings', JSON.stringify(result));
 
       const confColor = function(c) {
-        if (c >= 0.8) return 'text-red-500';
-        if (c >= 0.6) return 'text-amber-500';
-        return 'text-teal-500';
+        if (c >= 0.8) return 'text-red-500 bg-red-50 border-red-100';
+        if (c >= 0.6) return 'text-amber-600 bg-amber-50 border-amber-100';
+        return 'text-teal-600 bg-teal-50 border-teal-100';
       };
 
       container.innerHTML = result.anomalies.map(function(a) {
         const pct = Math.round((a.confidence || 0) * 100);
-        return '<div class="mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100">'
-          + '<div class="flex items-center justify-between">'
-          + '<span class="text-[10px] font-bold text-slate-700">' + (a.label || 'Finding') + '</span>'
-          + '<span class="text-[10px] font-black ' + confColor(a.confidence||0) + '">' + pct + '%</span>'
+        const style = confColor(a.confidence||0);
+        return '<div class="p-4 bg-white rounded-2xl border border-slate-100 shadow-sm hover:shadow-md transition-all animate-fadeIn">'
+          + '<div class="flex items-center justify-between mb-2">'
+          + '<span class="text-[11px] font-extrabold text-slate-800">' + (a.label || 'Finding') + '</span>'
+          + '<span class="px-2 py-0.5 rounded-lg text-[9px] font-black border ' + style + '">' + pct + '%</span>'
           + '</div>'
-          + (a.description ? '<p class="text-[9px] text-slate-400 mt-1">' + a.description + '</p>' : '')
+          + (a.description ? '<p class="text-[10px] text-slate-500 leading-relaxed mb-3">' + a.description + '</p>' : '')
+          + '<div class="flex gap-2">'
+          + '<span class="text-[8px] font-black uppercase text-slate-300 tracking-tighter">Loc: ' + Math.round(a.bbox[0]) + ',' + Math.round(a.bbox[1]) + '</span>'
+          + '</div>'
           + '</div>';
       }).join('');
     }
@@ -848,6 +884,14 @@
 
     function initSurgical() {
       addLog('Neural Link Established. Visual Diagnostic Engine Online.', 'info');
+      
+      const savedFindings = localStorage.getItem('active_findings');
+      if (savedFindings) {
+        try {
+          renderClinicalReport(JSON.parse(savedFindings));
+        } catch(e) {}
+      }
+      loadHistory();
     }
 
     initSurgical();

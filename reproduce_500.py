@@ -11,12 +11,12 @@ from core_api.services.supabase_service import SupabaseService
 from core_api.services.ai_service import AIService
 
 async def test_upload_flow():
-    test_file = 'login.html' # Just a dummy file for path testing
+    test_file = 'temp_uploads/test_scan.png'
     print(f"Testing flow with {test_file}")
     
     try:
         print("1. Testing AI Analysis...")
-        ai_result = await AIService.analyze_scan(test_file)
+        ai_result = AIService.analyze_scan(test_file)
         print(f"AI Result: {ai_result}")
         
         print("2. Testing DB Metadata Save (Sanitized)...")
@@ -26,7 +26,7 @@ async def test_upload_flow():
             "maternal_id": "TEST_ID",
             "processed_as": "IMAGE"
         }
-        db_result = await SupabaseService.save_scan_metadata(db_metadata)
+        db_result = SupabaseService.save_scan_metadata(db_metadata)
         print(f"DB Result: {db_result}")
         
         print("SUCCESS: Full flow logic works.")
